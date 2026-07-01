@@ -11,6 +11,9 @@ importers:
       '@opennextjs/cloudflare':
         specifier: ^1.19.9
         version: 1.20.1(next@16.2.6(@babel/core@7.29.7)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(wrangler@4.106.0)
+      daisyui:
+        specifier: ^5.6.6
+        version: 5.6.6
       next:
         specifier: 16.2.6
         version: 16.2.6(@babel/core@7.29.7)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -1835,6 +1838,9 @@ packages:
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
+  daisyui@5.6.6:
+    resolution: {integrity: sha512-UFiuIZYucF7ylrnY3PT1SqwaEbVB10mqTZRyeRchZk0bud+HihYLLhXdxGDVmR/ftrM9G9YVr9FFPRVVIZJ5hA==}
 
   damerau-levenshtein@1.0.8:
     resolution: {integrity: sha512-sdQSFB7+llfUcQHUQO3+B8ERRj0Oa4w9POWMI/puGtuf7gFywGmkaLCElnudfTiKZV+NvHqL0ifzdrI8Ro7ESA==}
@@ -5368,6 +5374,8 @@ snapshots:
       which: 2.0.2
 
   csstype@3.2.3: {}
+
+  daisyui@5.6.6: {}
 
   damerau-levenshtein@1.0.8: {}
 
