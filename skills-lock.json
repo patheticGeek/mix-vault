@@ -7,6 +7,12 @@
       "skillPath": "skills/cloudflare/SKILL.md",
       "computedHash": "a1646a6a2fb7cc683de5bf8357e5d6ae02db6fd0bf771d633c1890318e25bff2"
     },
+    "daisyui": {
+      "source": "saadeghi/daisyui",
+      "sourceType": "github",
+      "skillPath": "skills/daisyui/SKILL.md",
+      "computedHash": "adef920750831ad362603407547d261fcf697e16aec7f2adb7ef8f239e762aee"
+    },
     "durable-objects": {
       "source": "cloudflare/skills",
       "sourceType": "github",

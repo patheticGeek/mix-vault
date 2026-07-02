@@ -49,6 +49,7 @@
       "binding": "MIX_VAULT_DB",
       "database_name": "mix-vault",
       "database_id": "ac903244-f5bf-4f7c-a6b5-4b3fb85bc2da",
+      "migrations_dir": "drizzle/migrations",
     },
   ],
   "r2_buckets": [
