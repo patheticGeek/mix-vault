@@ -1,10 +1,13 @@
 "use client";
 
-import type { Track } from "@/lib/db/schema";
+import { apiClient } from "@/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
+import type { InferResponseType } from "hono/client";
 
-async function fetchTracks(): Promise<Track[]> {
-  const res = await fetch("/api/tracks");
+type TracksResponse = InferResponseType<typeof apiClient.api.tracks.$get>;
+
+async function fetchTracks(): Promise<TracksResponse> {
+  const res = await apiClient.api.tracks.$get();
   if (!res.ok) {
     throw new Error("Failed to fetch tracks");
   }
@@ -12,7 +15,7 @@ async function fetchTracks(): Promise<Track[]> {
 }
 
 export function useListTracks() {
-  return useQuery<Track[], Error>({
+  return useQuery<TracksResponse, Error>({
     queryKey: ["tracks"],
     queryFn: fetchTracks,
   });
