@@ -5,17 +5,23 @@ mix-vault is a self-hosted streaming platform for DJs and producers to upload th
 ## Tech Stack
 
 - Next.js
-- Cloudflare runtime
+- React 19
+- Cloudflare Workers runtime
 - OpenNext.js Cloudflare integration
+- Hono for API routing
+- Drizzle ORM with Cloudflare D1
+- React Query for client data fetching
+- Zod for schema validation
 - Tailwind CSS + daisyUI
 - TypeScript
 - pnpm
 
 ## Getting Started
 
-Use the project scripts below to run and manage the app.
+Install dependencies and run the app with pnpm.
 
 ```bash
+pnpm install
 pnpm run dev # start development server (runs cf-typegen then next dev)
 pnpm run build # build the app (runs cf-typegen then next build)
 pnpm run start # start the production server
@@ -24,4 +30,7 @@ pnpm run deploy # build and deploy to Cloudflare
 pnpm run upload # build and upload to Cloudflare
 pnpm run preview # build and preview on Cloudflare runtime
 pnpm run cf-typegen # generate Cloudflare environment types
+pnpm run drizzle:generate # generate Drizzle ORM types and schema artifacts
+pnpm run d1:apply:local # apply D1 migrations locally
+pnpm run d1:apply:prod # apply D1 migrations to remote Cloudflare database
 ```
