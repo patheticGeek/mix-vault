@@ -61,6 +61,9 @@
       "bucket_name": "mix-vault",
     },
   ],
+  "secrets": {
+    "required": ["AUTH_USERNAME", "AUTH_PASSWORD_HASH", "JWT_SECRET"],
+  },
   /**
    * Environment Variables
    * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
