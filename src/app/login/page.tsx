@@ -21,7 +21,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="hero min-h-screen bg-base-100 text-base-content">
+    <div className="hero min-h-[calc(100vh-4rem)] bg-base-100 text-base-content">
       <div className="hero-content flex-col w-full max-w-md gap-6">
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold">Sign in</h1>

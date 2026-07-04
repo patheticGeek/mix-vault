@@ -1,22 +1,12 @@
 "use client";
 
 import { useListTracks } from "@/hooks/queries/useListTracks";
-import { AuthStatus } from "@/components/AuthStatus";
 
 export default function Home() {
   const { data: tracks, isLoading, error } = useListTracks();
 
   return (
     <div className="bg-base-100 text-base-content">
-      <header className="navbar">
-        <div className="navbar-start">
-          <a className="btn btn-ghost normal-case">Mix Vault</a>
-        </div>
-        <div className="navbar-end">
-          <AuthStatus />
-        </div>
-      </header>
-
       <main className="hero min-h-[calc(100vh-4rem)]">
         <div className="hero-content flex-col text-center gap-8">
           <div>

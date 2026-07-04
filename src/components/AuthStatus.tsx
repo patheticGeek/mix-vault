@@ -18,7 +18,9 @@ export function AuthStatus() {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm text-base-content/70">{user.username}</span>
+      <Link href="/admin" className="text-sm text-base-content/70 hover:underline">
+        {user.username}
+      </Link>
       <button onClick={() => logout()} disabled={isLoggingOut} className="btn btn-ghost btn-sm">
         {isLoggingOut ? "Signing out..." : "Sign out"}
       </button>
