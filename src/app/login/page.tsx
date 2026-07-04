@@ -14,7 +14,7 @@ export default function LoginPage() {
     event.preventDefault();
     try {
       await login(username, password);
-      router.push("/");
+      router.push("/admin");
     } catch {
       // loginError from useAuth already reflects the failure
     }
