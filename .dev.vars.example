@@ -1,0 +1,7 @@
+# Load .env.development* files when running `wrangler dev`
+NEXTJS_ENV=development
+
+# Auth — generate with `pnpm generate:auth-secrets`
+AUTH_USERNAME=
+AUTH_PASSWORD_HASH=
+JWT_SECRET=

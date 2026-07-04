@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { authRouter } from "./routes/auth";
 import { tracksRouter } from "./routes/tracks";
 
 export const app = new Hono()
@@ -11,6 +12,7 @@ export const app = new Hono()
       throw err;
     }
   })
+  .route("/auth", authRouter)
   .route("/tracks", tracksRouter)
   .get("/(.*)", () => {
     return new Response("Not Found", { status: 404 });

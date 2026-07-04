@@ -34,3 +34,13 @@ pnpm run drizzle:generate # generate Drizzle ORM types and schema artifacts
 pnpm run d1:apply:local # apply D1 migrations locally
 pnpm run d1:apply:prod # apply D1 migrations to remote Cloudflare database
 ```
+
+### Auth
+
+The app has a single admin user, authenticated via a JWT stored in an httpOnly cookie, with the password checked against a bcrypt hash. Generate credentials with:
+
+```bash
+pnpm run generate:auth-secrets # prompts for a username/password, prints AUTH_USERNAME, AUTH_PASSWORD_HASH, JWT_SECRET
+```
+
+Add the printed values to `.dev.vars` for local development, or set them with `wrangler secret put <NAME>` for production.
