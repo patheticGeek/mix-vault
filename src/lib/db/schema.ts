@@ -3,15 +3,14 @@ import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 
 export const trackSchema = z.object({
-  id: z.number().int(),
+  id: z.string(),
   title: z.string(),
-  type: z.enum(["song", "dj_mix"]),
   description: z.string(),
-  file: z.string(),
-  image: z.string(),
+  tags: z.array(z.string()),
+  audioFile: z.string(),
+  artworkFile: z.string(),
   waveformPreview: z.string(),
   slug: z.string(),
-  tags: z.array(z.string()),
   createdAt: z.date(),
 });
 
@@ -43,22 +42,20 @@ export function normalizeTrackRow(raw: unknown): Track {
 export const tracks = sqliteTable(
   "tracks",
   {
-    id: integer("id").primaryKey().notNull(),
+    id: text("id").primaryKey().notNull(),
     title: text("title").notNull(),
-    type: text("type").notNull(),
     description: text("description").notNull(),
-    file: text("file").notNull(),
-    image: text("image").notNull(),
+    tags: text("tags").notNull().default("[]"),
+    audioFile: text("audio_file").notNull(),
+    artworkFile: text("artwork_file").notNull(),
     waveformPreview: text("waveform_preview").notNull(),
     slug: text("slug").notNull().unique(),
-    tags: text("tags").notNull().default("[]"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast((julianday('now') - 2440587.5)*86400000 as integer))`)
       .notNull(),
   },
   (t) => [
     index("idx_tracks_title").on(t.title),
-    index("idx_tracks_type").on(t.type),
     index("idx_tracks_tags").on(t.tags),
   ],
 );

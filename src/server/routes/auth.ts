@@ -1,11 +1,10 @@
 import { verifyCredentials } from "@/lib/auth/credentials";
 import { SESSION_MAX_AGE_SECONDS, signSessionToken, verifySessionToken } from "@/lib/auth/jwt";
+import { SESSION_COOKIE_NAME } from "@/lib/auth/session";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { z } from "zod";
-
-const SESSION_COOKIE_NAME = "session";
 
 const loginSchema = z.object({
   username: z.string().min(1),
