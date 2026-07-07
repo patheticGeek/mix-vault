@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { authRouter } from "./routes/auth";
 import { tracksRouter } from "./routes/tracks";
+import { uploadsRouter } from "./routes/uploads";
 
 export const app = new Hono()
   .basePath("/api")
@@ -14,6 +15,7 @@ export const app = new Hono()
   })
   .route("/auth", authRouter)
   .route("/tracks", tracksRouter)
+  .route("/uploads", uploadsRouter)
   .get("/(.*)", () => {
     return new Response("Not Found", { status: 404 });
   });
