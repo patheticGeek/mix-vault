@@ -13,6 +13,11 @@ interface UploadedPart {
   etag: string;
 }
 
+interface PresignedPart {
+  partNumber: number;
+  url: string;
+}
+
 class PartUploadError extends Error {
   constructor(
     message: string,
@@ -26,8 +31,8 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// R2/Workers can return transient 5xx or drop the connection under load;
-// retrying a single part is much cheaper than restarting the whole upload.
+// R2 can return transient 5xx or drop the connection under load; retrying a
+// single part is much cheaper than restarting the whole upload.
 function isRetryableStatus(status: number): boolean {
   return status === 0 || status === 408 || status === 429 || status >= 500;
 }
@@ -44,43 +49,28 @@ async function parseErrorMessage(res: Response, fallback: string): Promise<strin
   return fallback;
 }
 
-function putPart(
-  key: string,
-  uploadId: string,
-  partNumber: number,
-  chunk: Blob,
-  onProgress: (loaded: number) => void,
-): Promise<UploadedPart> {
+// Uploads directly to R2's S3-compatible endpoint via a presigned URL, so the
+// file bytes never pass through (and burn CPU time in) our Worker.
+function putPart(url: string, partNumber: number, chunk: Blob, onProgress: (loaded: number) => void): Promise<UploadedPart> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const params = new URLSearchParams({ key, uploadId, partNumber: String(partNumber) });
-    xhr.open("PUT", `/api/uploads/audio/part?${params.toString()}`);
+    xhr.open("PUT", url);
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress(event.loaded);
     };
 
     xhr.onload = () => {
-      let data: unknown = null;
-      try {
-        data = JSON.parse(xhr.responseText);
-      } catch {
-        // handled by the status check below
-      }
-
       if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(data as UploadedPart);
+        const etag = xhr.getResponseHeader("ETag");
+        if (!etag) {
+          reject(new PartUploadError("R2 did not return an ETag for this part", xhr.status));
+          return;
+        }
+        resolve({ partNumber, etag });
         return;
       }
-
-      const hasErrorMessage =
-        data && typeof data === "object" && "error" in data && typeof (data as Record<string, unknown>).error === "string";
-      reject(
-        new PartUploadError(
-          hasErrorMessage ? (data as { error: string }).error : "Failed to upload audio file part",
-          xhr.status,
-        ),
-      );
+      reject(new PartUploadError(`Failed to upload audio file part (status ${xhr.status})`, xhr.status));
     };
 
     xhr.onerror = () => reject(new PartUploadError("Failed to upload audio file part", 0));
@@ -89,15 +79,14 @@ function putPart(
 }
 
 async function putPartWithRetry(
-  key: string,
-  uploadId: string,
+  url: string,
   partNumber: number,
   chunk: Blob,
   onProgress: (loaded: number) => void,
 ): Promise<UploadedPart> {
   for (let attempt = 0; ; attempt++) {
     try {
-      return await putPart(key, uploadId, partNumber, chunk, onProgress);
+      return await putPart(url, partNumber, chunk, onProgress);
     } catch (err) {
       const status = err instanceof PartUploadError ? err.status : 0;
       if (attempt >= MAX_PART_RETRIES || !isRetryableStatus(status)) throw err;
@@ -110,17 +99,22 @@ async function putPartWithRetry(
 export async function uploadAudioMultipart(file: File, { onProgress }: UploadAudioOptions = {}): Promise<string> {
   if (file.size === 0) throw new Error("Audio file is required");
 
+  const partCount = Math.ceil(file.size / PART_SIZE);
+
   const createRes = await fetch("/api/uploads/audio", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ filename: file.name, contentType: file.type || undefined }),
+    body: JSON.stringify({ filename: file.name, contentType: file.type || undefined, partCount }),
   });
   if (!createRes.ok) {
     throw new Error(await parseErrorMessage(createRes, "Failed to start audio upload"));
   }
-  const { key, uploadId } = (await createRes.json()) as { key: string; uploadId: string };
+  const { key, uploadId, parts: presignedParts } = (await createRes.json()) as {
+    key: string;
+    uploadId: string;
+    parts: PresignedPart[];
+  };
 
-  const partCount = Math.ceil(file.size / PART_SIZE);
   const parts: UploadedPart[] = [];
   const loadedByPart = new Array<number>(partCount).fill(0);
 
@@ -130,18 +124,18 @@ export async function uploadAudioMultipart(file: File, { onProgress }: UploadAud
   };
 
   try {
-    for (let i = 0; i < partCount; i++) {
-      const partNumber = i + 1;
+    for (const { partNumber, url } of presignedParts) {
+      const i = partNumber - 1;
       const start = i * PART_SIZE;
       const chunk = file.slice(start, Math.min(start + PART_SIZE, file.size));
 
-      const part = await putPartWithRetry(key, uploadId, partNumber, chunk, (loaded) => {
+      const part = await putPartWithRetry(url, partNumber, chunk, (loaded) => {
         loadedByPart[i] = loaded;
         reportProgress();
       });
 
       loadedByPart[i] = chunk.size;
-      parts.push({ partNumber: part.partNumber, etag: part.etag });
+      parts.push(part);
       reportProgress();
     }
   } catch (err) {

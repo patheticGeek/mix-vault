@@ -62,7 +62,14 @@
     },
   ],
   "secrets": {
-    "required": ["AUTH_USERNAME", "AUTH_PASSWORD_HASH", "JWT_SECRET"],
+    "required": [
+      "AUTH_USERNAME",
+      "AUTH_PASSWORD_HASH",
+      "JWT_SECRET",
+      "R2_ACCOUNT_ID",
+      "R2_ACCESS_KEY_ID",
+      "R2_SECRET_ACCESS_KEY",
+    ],
   },
   /**
    * Environment Variables
