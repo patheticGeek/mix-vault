@@ -3,6 +3,7 @@
 import { useCreateTrack } from "@/hooks/mutations/useCreateTrack";
 import { useUpdateTrack } from "@/hooks/mutations/useUpdateTrack";
 import type { TrackResponse } from "@/hooks/queries/useTrack";
+import { Waveform } from "@/components/Waveform";
 import { extractWaveformPeaks } from "@/lib/waveform";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -14,20 +15,6 @@ function slugify(input: string): string {
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-}
-
-function WaveformPreview({ peaks }: { peaks: number[] }) {
-  return (
-    <div className="flex items-end gap-px h-16 w-full">
-      {peaks.map((peak, i) => (
-        <div
-          key={i}
-          className="flex-1 bg-primary rounded-sm"
-          style={{ height: `${Math.max(peak * 100, 2)}%` }}
-        />
-      ))}
-    </div>
-  );
 }
 
 interface TrackFormValues {
@@ -203,7 +190,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
             The audio file can&apos;t be changed after a track is uploaded.
           </p>
           {existingWaveformPeaks && (
-            <WaveformPreview peaks={existingWaveformPeaks} />
+            <Waveform peaks={existingWaveformPeaks} />
           )}
         </div>
       ) : (
@@ -232,7 +219,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           )}
 
           {waveformPeaks && !isAnalyzing && (
-            <WaveformPreview peaks={waveformPeaks} />
+            <Waveform peaks={waveformPeaks} />
           )}
 
           {analyzeError && (
