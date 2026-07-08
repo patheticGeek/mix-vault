@@ -1,6 +1,11 @@
 const PEAK_COUNT = 200;
 
-export async function extractWaveformPeaks(file: File): Promise<number[]> {
+export interface WaveformAnalysis {
+  peaks: number[];
+  duration: number;
+}
+
+export async function extractWaveformPeaks(file: File): Promise<WaveformAnalysis> {
   const arrayBuffer = await file.arrayBuffer();
   const audioContext = new AudioContext();
   try {
@@ -23,7 +28,7 @@ export async function extractWaveformPeaks(file: File): Promise<number[]> {
       peaks.push(Math.round(max * 1000) / 1000);
     }
 
-    return peaks;
+    return { peaks, duration: audioBuffer.duration };
   } finally {
     await audioContext.close();
   }

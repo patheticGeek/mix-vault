@@ -2,9 +2,10 @@
 
 import { Waveform } from "@/components/Waveform";
 import type { TrackSummary } from "@/hooks/queries/useListTracks";
+import { useAudio } from "@/hooks/useAudio";
 import { assetUrl } from "@/lib/cdn";
 import { formatDuration, timeAgo } from "@/lib/time";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 
 function PlayIcon() {
   return (
@@ -30,9 +31,13 @@ interface TrackListItemProps {
 }
 
 export function TrackListItem({ track, isPlaying, onPlay, onPause }: TrackListItemProps) {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const { audioProps, currentTime, seek } = useAudio({
+    src: assetUrl(track.audioFile),
+    duration: track.duration,
+    isPlaying,
+    onPlay,
+    onPause,
+  });
 
   const peaks = useMemo(() => {
     try {
@@ -43,36 +48,16 @@ export function TrackListItem({ track, isPlaying, onPlay, onPause }: TrackListIt
     }
   }, [track.waveformPreview]);
 
-  // Reacts to isPlaying regardless of *why* it changed (this item's own button,
-  // or another item starting up and taking over as the only one playing).
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (isPlaying) {
-      audio.play().catch(() => {});
-    } else {
-      audio.pause();
-    }
-  }, [isPlaying]);
-
   function togglePlay() {
     if (isPlaying) onPause();
     else onPlay();
   }
 
-  function seek(fraction: number) {
-    const audio = audioRef.current;
-    if (!audio || !duration) return;
-    audio.currentTime = fraction * duration;
-    setCurrentTime(audio.currentTime);
-    if (!isPlaying) onPlay();
-  }
-
   return (
-    <li className="flex gap-4 p-4">
-      <div className="relative w-28 h-28 shrink-0 rounded overflow-hidden bg-base-300">
+    <li className="grid grid-cols-[auto_1fr] items-stretch gap-4 p-4 bg-base-200 rounded-box">
+      <div className="relative aspect-square rounded overflow-hidden bg-base-300">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={assetUrl(track.artworkFile)} alt="" className="w-full h-full object-cover" />
+        <img src={assetUrl(track.artworkFile)} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <button
           type="button"
           onClick={togglePlay}
@@ -85,38 +70,34 @@ export function TrackListItem({ track, isPlaying, onPlay, onPause }: TrackListIt
         </button>
       </div>
 
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0">
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-semibold truncate">{track.title}</h3>
-          <div className="flex items-center gap-2 shrink-0 text-xs text-base-content/60">
+          <span className="text-xs text-base-content/60 shrink-0">{timeAgo(track.createdAt)}</span>
+        </div>
+
+        {track.tags.length > 0 && (
+          <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1">
             {track.tags.map((tag) => (
-              <span key={tag} className="badge badge-sm badge-primary">
+              <span key={tag} className="text-xs text-base-content/50">
                 #{tag}
               </span>
             ))}
-            <span>{timeAgo(track.createdAt)}</span>
           </div>
-        </div>
+        )}
 
         <div className="relative mt-3">
-          <Waveform peaks={peaks} progress={duration ? currentTime / duration : 0} onSeek={seek} />
-          <span className="absolute bottom-0.5 right-1 text-[10px] text-base-content/70 bg-base-100/70 px-1 rounded">
-            {formatDuration(isPlaying || currentTime > 0 ? currentTime : duration)}
+          <Waveform peaks={peaks} progress={track.duration ? currentTime / track.duration : 0} onSeek={seek} />
+          <span className="absolute bottom-0.5 left-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
+            {formatDuration(currentTime)}
+          </span>
+          <span className="absolute bottom-0.5 right-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
+            {formatDuration(track.duration)}
           </span>
         </div>
       </div>
 
-      <audio
-        ref={audioRef}
-        src={assetUrl(track.audioFile)}
-        preload="metadata"
-        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-        onEnded={() => {
-          setCurrentTime(0);
-          onPause();
-        }}
-      />
+      <audio {...audioProps} />
     </li>
   );
 }

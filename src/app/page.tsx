@@ -34,7 +34,7 @@ export default function Home() {
         )}
 
         {tracks && tracks.length > 0 && (
-          <ul className="divide-y divide-base-300 bg-base-200 rounded-box overflow-hidden">
+          <ul className="flex flex-col gap-4">
             {tracks.map((track) => (
               <TrackListItem
                 key={track.id}
