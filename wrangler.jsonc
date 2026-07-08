@@ -62,7 +62,7 @@
     },
   ],
   "secrets": {
-    "required": ["AUTH_USERNAME", "AUTH_PASSWORD_HASH", "JWT_SECRET"],
+    "required": ["AUTH_USERNAME", "AUTH_PASSWORD_HASH", "JWT_SECRET", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"],
   },
   /**
    * Environment Variables
@@ -70,5 +70,8 @@
    * Note: Use secrets to store sensitive data.
    * https://developers.cloudflare.com/workers/configuration/secrets/
    */
-  // "vars": {  "MY_VARIABLE": "production_value" }
+  "vars": {
+    // Not sensitive: it's the same account ID visible in every R2 presigned URL and the dashboard.
+    "R2_ACCOUNT_ID": "107a35960b0e1889cf2931a8b8c21352",
+  },
 }
