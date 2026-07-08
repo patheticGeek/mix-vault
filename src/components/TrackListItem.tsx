@@ -87,7 +87,12 @@ export function TrackListItem({ track, isPlaying, onPlay, onPause }: TrackListIt
         )}
 
         <div className="relative mt-3">
-          <Waveform peaks={peaks} progress={track.duration ? currentTime / track.duration : 0} onSeek={seek} />
+          <Waveform
+            peaks={peaks}
+            progress={track.duration ? currentTime / track.duration : 0}
+            onSeek={seek}
+            height="h-28"
+          />
           <span className="absolute bottom-0.5 left-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
             {formatDuration(currentTime)}
           </span>

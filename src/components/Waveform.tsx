@@ -5,14 +5,15 @@ interface WaveformProps {
   progress?: number;
   onSeek?: (fraction: number) => void;
   className?: string;
+  height?: string;
 }
 
-export function Waveform({ peaks, progress = 0, onSeek, className = "" }: WaveformProps) {
+export function Waveform({ peaks, progress = 0, onSeek, className = "", height = "h-16" }: WaveformProps) {
   const playedCount = Math.round(progress * peaks.length);
 
   return (
     <div
-      className={`flex items-end gap-px h-16 w-full ${onSeek ? "cursor-pointer" : ""} ${className}`}
+      className={`flex items-end gap-px w-full ${height} ${onSeek ? "cursor-pointer" : ""} ${className}`}
       onClick={(e) => {
         if (!onSeek) return;
         const rect = e.currentTarget.getBoundingClientRect();
