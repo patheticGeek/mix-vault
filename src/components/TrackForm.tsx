@@ -1,9 +1,11 @@
 "use client";
 
+import { Waveform } from "@/components/Waveform";
 import { useCreateTrack } from "@/hooks/mutations/useCreateTrack";
+import { useDeleteTrack } from "@/hooks/mutations/useDeleteTrack";
 import { useUpdateTrack } from "@/hooks/mutations/useUpdateTrack";
 import type { TrackResponse } from "@/hooks/queries/useTrack";
-import { Waveform } from "@/components/Waveform";
+import { assetUrl } from "@/lib/cdn";
 import { extractWaveformPeaks, type WaveformAnalysis } from "@/lib/waveform";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -17,11 +19,34 @@ function slugify(input: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+function toDateInputValue(date: Date | number | string): string {
+  return new Date(date).toISOString().slice(0, 10);
+}
+
+// Creates an object URL for local file previews (artwork image, audio
+// playback) and revokes it on cleanup so we don't leak blob URLs.
+function useObjectUrl(file: File | null): string | null {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) {
+      setUrl(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
+
+  return url;
+}
+
 interface TrackFormValues {
   title: string;
   slug: string;
   description: string;
   tags: string;
+  recordedAt: string;
 }
 
 export function TrackForm({ track }: { track?: TrackResponse }) {
@@ -29,6 +54,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   const router = useRouter();
   const createTrack = useCreateTrack();
   const updateTrack = useUpdateTrack(track?.id ?? "");
+  const deleteTrack = useDeleteTrack();
   const mutation = isEditMode ? updateTrack : createTrack;
 
   const { register, handleSubmit, watch, setValue } = useForm<TrackFormValues>({
@@ -37,6 +63,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
       slug: track?.slug ?? "",
       description: track?.description ?? "",
       tags: track?.tags.join(", ") ?? "",
+      recordedAt: track?.recordedAt ? toDateInputValue(track.recordedAt) : "",
     },
   });
 
@@ -47,6 +74,11 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  const audioPreviewUrl = useObjectUrl(audioFile);
+  const artworkPreviewUrl = useObjectUrl(artworkFile);
+  const audioSrc = audioPreviewUrl ?? (track ? assetUrl(track.audioFile) : null);
+  const artworkSrc = artworkPreviewUrl ?? (track ? assetUrl(track.artworkFile) : null);
 
   const existingWaveformPeaks = useMemo(() => {
     if (!track) return null;
@@ -71,6 +103,11 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
     setAnalyzeError(null);
     if (!file) return;
 
+    // File.lastModified is the closest thing browsers expose to a
+    // "created" date — a reasonable default for when a mix was recorded,
+    // since audio files are rarely touched again after export.
+    setValue("recordedAt", toDateInputValue(file.lastModified));
+
     setIsAnalyzing(true);
     try {
       const analysis = await extractWaveformPeaks(file);
@@ -82,6 +119,18 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
     }
   }
 
+  async function handleDelete() {
+    if (!track) return;
+    if (!confirm(`Delete "${track.title}"? This can't be undone.`)) return;
+
+    try {
+      await deleteTrack.mutateAsync(track.id);
+      router.push("/admin");
+    } catch {
+      // deleteTrack.error already reflects the failure
+    }
+  }
+
   async function onSubmit(values: TrackFormValues) {
     if (isEditMode && track) {
       try {
@@ -90,6 +139,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           description: values.description,
           tags: values.tags,
           slug: values.slug,
+          recordedAt: values.recordedAt,
           artworkFile: artworkFile ?? undefined,
         });
         router.push("/admin");
@@ -108,6 +158,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
         description: values.description,
         tags: values.tags,
         slug: values.slug,
+        recordedAt: values.recordedAt,
         audioFile,
         artworkFile,
         waveformPreview: JSON.stringify(waveformAnalysis.peaks),
@@ -182,6 +233,18 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
         />
       </div>
 
+      <div className="form-control">
+        <label className="label" htmlFor="recordedAt">
+          <span className="label-text">Recorded at</span>
+        </label>
+        <input
+          id="recordedAt"
+          type="date"
+          className="input input-bordered w-full"
+          {...register("recordedAt")}
+        />
+      </div>
+
       {isEditMode ? (
         <div className="form-control">
           <label className="label">
@@ -190,8 +253,10 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           <p className="text-sm text-base-content/60 mb-2">
             The audio file can&apos;t be changed after a track is uploaded.
           </p>
-          {existingWaveformPeaks && (
-            <Waveform peaks={existingWaveformPeaks} />
+          {existingWaveformPeaks && <Waveform peaks={existingWaveformPeaks} />}
+          {audioSrc && (
+            // eslint-disable-next-line jsx-a11y/media-has-caption
+            <audio controls src={audioSrc} className="w-full mt-2" />
           )}
         </div>
       ) : (
@@ -223,6 +288,11 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
             <Waveform peaks={waveformAnalysis.peaks} />
           )}
 
+          {audioSrc && !isAnalyzing && (
+            // eslint-disable-next-line jsx-a11y/media-has-caption
+            <audio controls src={audioSrc} className="w-full mt-2" />
+          )}
+
           {analyzeError && (
             <p className="text-error text-sm" role="alert">
               {analyzeError}
@@ -245,11 +315,21 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           onChange={(e) => setArtworkFile(e.target.files?.[0] ?? null)}
           className="file-input file-input-bordered w-full"
         />
+        {artworkSrc && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={artworkSrc} alt="" className="w-32 h-32 object-cover rounded mt-2" />
+        )}
       </div>
 
       {mutation.error && (
         <p className="text-error text-sm" role="alert">
           {mutation.error.message}
+        </p>
+      )}
+
+      {deleteTrack.error && (
+        <p className="text-error text-sm" role="alert">
+          {deleteTrack.error.message}
         </p>
       )}
 
@@ -264,29 +344,42 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
         </div>
       )}
 
-      <div className="flex gap-2 pt-2">
-        <button
-          type="submit"
-          disabled={isAnalyzing || mutation.isPending}
-          className="btn btn-primary"
-        >
-          {isEditMode
-            ? updateTrack.isPending
-              ? "Saving..."
-              : "Save changes"
-            : isAnalyzing
-              ? "Analyzing..."
-              : createTrack.isPending
-                ? "Uploading..."
-                : "Upload track"}
-        </button>
-        <button
-          type="button"
-          onClick={() => router.push("/admin")}
-          className="btn btn-ghost"
-        >
-          Cancel
-        </button>
+      <div className="flex items-center justify-between gap-2 pt-2">
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            disabled={isAnalyzing || mutation.isPending}
+            className="btn btn-primary"
+          >
+            {isEditMode
+              ? updateTrack.isPending
+                ? "Saving..."
+                : "Save changes"
+              : isAnalyzing
+                ? "Analyzing..."
+                : createTrack.isPending
+                  ? "Uploading..."
+                  : "Upload track"}
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/admin")}
+            className="btn btn-ghost"
+          >
+            Cancel
+          </button>
+        </div>
+
+        {isEditMode && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleteTrack.isPending}
+            className="btn btn-error btn-outline"
+          >
+            {deleteTrack.isPending ? "Deleting..." : "Delete track"}
+          </button>
+        )}
       </div>
     </form>
   );

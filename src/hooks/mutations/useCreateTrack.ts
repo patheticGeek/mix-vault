@@ -41,6 +41,7 @@ async function createTrack({
   formData.set("artworkFile", form.artworkFile);
   formData.set("waveformPreview", form.waveformPreview);
   formData.set("duration", String(form.duration));
+  if (form.recordedAt !== undefined) formData.set("recordedAt", form.recordedAt);
 
   return new Promise<CreateTrackResponse>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
