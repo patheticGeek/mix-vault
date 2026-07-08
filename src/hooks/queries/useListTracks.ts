@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { InferResponseType } from "hono/client";
 
 type TracksResponse = InferResponseType<typeof apiClient.api.tracks.$get>;
+export type TrackSummary = TracksResponse[number];
 
 async function fetchTracks(): Promise<TracksResponse> {
   const res = await apiClient.api.tracks.$get();

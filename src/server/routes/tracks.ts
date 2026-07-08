@@ -26,6 +26,10 @@ const createTrackSchema = z.object({
     .instanceof(File, { message: "Artwork file is required" })
     .refine((file) => file.size > 0, "Artwork file is required"),
   waveformPreview: z.string({ error: "Waveform preview is required" }).min(1, "Waveform preview is required"),
+  duration: z
+    .string({ error: "Duration is required" })
+    .transform((value) => Number(value))
+    .refine((value) => Number.isFinite(value) && value > 0, "Duration is required"),
 });
 
 const updateTrackSchema = z.object({
@@ -61,7 +65,7 @@ export const tracksRouter = new Hono()
       }
     }),
     async (c) => {
-      const { title, description, tags: tagsInput, slug: slugInput, audioFileKey, artworkFile, waveformPreview } =
+      const { title, description, tags: tagsInput, slug: slugInput, audioFileKey, artworkFile, waveformPreview, duration } =
         c.req.valid("form");
 
       const context = getCloudflareContext();
@@ -97,6 +101,7 @@ export const tracksRouter = new Hono()
           audioFile: audioFileKey,
           artworkFile: artworkFileKey,
           waveformPreview,
+          duration,
           slug,
         })
         .returning();

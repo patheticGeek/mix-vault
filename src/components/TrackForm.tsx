@@ -3,7 +3,8 @@
 import { useCreateTrack } from "@/hooks/mutations/useCreateTrack";
 import { useUpdateTrack } from "@/hooks/mutations/useUpdateTrack";
 import type { TrackResponse } from "@/hooks/queries/useTrack";
-import { extractWaveformPeaks } from "@/lib/waveform";
+import { Waveform } from "@/components/Waveform";
+import { extractWaveformPeaks, type WaveformAnalysis } from "@/lib/waveform";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -14,20 +15,6 @@ function slugify(input: string): string {
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-}
-
-function WaveformPreview({ peaks }: { peaks: number[] }) {
-  return (
-    <div className="flex items-end gap-px h-16 w-full">
-      {peaks.map((peak, i) => (
-        <div
-          key={i}
-          className="flex-1 bg-primary rounded-sm"
-          style={{ height: `${Math.max(peak * 100, 2)}%` }}
-        />
-      ))}
-    </div>
-  );
 }
 
 interface TrackFormValues {
@@ -56,7 +43,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   const [slugTouched, setSlugTouched] = useState(isEditMode);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [artworkFile, setArtworkFile] = useState<File | null>(null);
-  const [waveformPeaks, setWaveformPeaks] = useState<number[] | null>(null);
+  const [waveformAnalysis, setWaveformAnalysis] = useState<WaveformAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -80,14 +67,14 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
 
   async function handleAudioFileChange(file: File | null) {
     setAudioFile(file);
-    setWaveformPeaks(null);
+    setWaveformAnalysis(null);
     setAnalyzeError(null);
     if (!file) return;
 
     setIsAnalyzing(true);
     try {
-      const peaks = await extractWaveformPeaks(file);
-      setWaveformPeaks(peaks);
+      const analysis = await extractWaveformPeaks(file);
+      setWaveformAnalysis(analysis);
     } catch {
       setAnalyzeError("Could not read that audio file. Try a different file.");
     } finally {
@@ -112,7 +99,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
       return;
     }
 
-    if (!audioFile || !artworkFile || !waveformPeaks) return;
+    if (!audioFile || !artworkFile || !waveformAnalysis) return;
 
     setUploadProgress(0);
     try {
@@ -123,7 +110,8 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
         slug: values.slug,
         audioFile,
         artworkFile,
-        waveformPreview: JSON.stringify(waveformPeaks),
+        waveformPreview: JSON.stringify(waveformAnalysis.peaks),
+        duration: waveformAnalysis.duration,
         onProgress: setUploadProgress,
       });
       router.push("/admin");
@@ -203,7 +191,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
             The audio file can&apos;t be changed after a track is uploaded.
           </p>
           {existingWaveformPeaks && (
-            <WaveformPreview peaks={existingWaveformPeaks} />
+            <Waveform peaks={existingWaveformPeaks} />
           )}
         </div>
       ) : (
@@ -231,8 +219,8 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
             </div>
           )}
 
-          {waveformPeaks && !isAnalyzing && (
-            <WaveformPreview peaks={waveformPeaks} />
+          {waveformAnalysis && !isAnalyzing && (
+            <Waveform peaks={waveformAnalysis.peaks} />
           )}
 
           {analyzeError && (

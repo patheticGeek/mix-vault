@@ -10,8 +10,9 @@ const createTrackEndpoint = apiClient.api.tracks.$post;
 type CreateTrackForm = InferRequestType<typeof createTrackEndpoint>["form"];
 type CreateTrackResponse = InferResponseType<typeof createTrackEndpoint, 201>;
 
-export type CreateTrackInput = Omit<CreateTrackForm, "audioFileKey"> & {
+export type CreateTrackInput = Omit<CreateTrackForm, "audioFileKey" | "duration"> & {
   audioFile: File;
+  duration: number;
 };
 
 interface CreateTrackVariables extends CreateTrackInput {
@@ -39,6 +40,7 @@ async function createTrack({
   formData.set("audioFileKey", audioFileKey);
   formData.set("artworkFile", form.artworkFile);
   formData.set("waveformPreview", form.waveformPreview);
+  formData.set("duration", String(form.duration));
 
   return new Promise<CreateTrackResponse>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
