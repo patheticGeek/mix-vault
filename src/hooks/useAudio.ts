@@ -19,8 +19,11 @@ interface UseAudioResult {
     onPause: () => void;
     onEnded: () => void;
     onTimeUpdate: (e: React.SyntheticEvent<HTMLAudioElement>) => void;
+    onWaiting: () => void;
+    onPlaying: () => void;
   };
   currentTime: number;
+  isBuffering: boolean;
   seek: (fraction: number) => void;
 }
 
@@ -32,6 +35,7 @@ interface UseAudioResult {
 export function useAudio({ src, duration, isPlaying, onPlay, onPause }: UseAudioOptions): UseAudioResult {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isBuffering, setIsBuffering] = useState(false);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -57,11 +61,20 @@ export function useAudio({ src, duration, isPlaying, onPlay, onPause }: UseAudio
       src,
       preload: "metadata",
       onPlay,
-      onPause,
-      onEnded: onPause,
+      onPause: () => {
+        setIsBuffering(false);
+        onPause();
+      },
+      onEnded: () => {
+        setIsBuffering(false);
+        onPause();
+      },
       onTimeUpdate: (e) => setCurrentTime(e.currentTarget.currentTime),
+      onWaiting: () => setIsBuffering(true),
+      onPlaying: () => setIsBuffering(false),
     },
     currentTime,
+    isBuffering,
     seek,
   };
 }

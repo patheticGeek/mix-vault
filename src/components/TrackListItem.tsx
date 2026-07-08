@@ -23,6 +23,15 @@ function PauseIcon() {
   );
 }
 
+function SpinnerIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 animate-spin">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 interface TrackListItemProps {
   track: TrackSummary;
   isPlaying: boolean;
@@ -31,7 +40,7 @@ interface TrackListItemProps {
 }
 
 export function TrackListItem({ track, isPlaying, onPlay, onPause }: TrackListItemProps) {
-  const { audioProps, currentTime, seek } = useAudio({
+  const { audioProps, currentTime, isBuffering, seek } = useAudio({
     src: assetUrl(track.audioFile),
     duration: track.duration,
     isPlaying,
@@ -65,7 +74,7 @@ export function TrackListItem({ track, isPlaying, onPlay, onPause }: TrackListIt
           className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/40 transition-colors"
         >
           <span className="flex items-center justify-center w-12 h-12 rounded-full bg-base-100/90 text-base-content">
-            {isPlaying ? <PauseIcon /> : <PlayIcon />}
+            {isPlaying ? isBuffering ? <SpinnerIcon /> : <PauseIcon /> : <PlayIcon />}
           </span>
         </button>
       </div>
