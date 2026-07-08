@@ -1,12 +1,14 @@
 "use client";
 
+import { TrackListItem } from "@/components/TrackListItem";
 import { Waveform } from "@/components/Waveform";
 import { useCreateTrack } from "@/hooks/mutations/useCreateTrack";
 import { useDeleteTrack } from "@/hooks/mutations/useDeleteTrack";
 import { useUpdateTrack } from "@/hooks/mutations/useUpdateTrack";
 import type { TrackResponse } from "@/hooks/queries/useTrack";
 import { assetUrl } from "@/lib/cdn";
-import { extractWaveformPeaks, type WaveformAnalysis } from "@/lib/waveform";
+import { timeAgo } from "@/lib/time";
+import { extractWaveformPeaks, parsePeaks, type WaveformAnalysis } from "@/lib/waveform";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -80,17 +82,24 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   const audioSrc = audioPreviewUrl ?? (track ? assetUrl(track.audioFile) : null);
   const artworkSrc = artworkPreviewUrl ?? (track ? assetUrl(track.artworkFile) : null);
 
-  const existingWaveformPeaks = useMemo(() => {
-    if (!track) return null;
-    try {
-      const parsed = JSON.parse(track.waveformPreview);
-      return Array.isArray(parsed) ? (parsed as number[]) : null;
-    } catch {
-      return null;
-    }
-  }, [track]);
+  const existingWaveformPeaks = useMemo(
+    () => (track ? parsePeaks(track.waveformPreview) : null),
+    [track],
+  );
+
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const previewPeaks = waveformAnalysis?.peaks ?? existingWaveformPeaks ?? [];
+  const previewDuration = waveformAnalysis?.duration ?? track?.duration ?? 0;
 
   const titleValue = watch("title");
+  const tagsValue = watch("tags");
+  const previewTags = tagsValue
+    ? tagsValue
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    : [];
+
   useEffect(() => {
     if (!slugTouched) setValue("slug", slugify(titleValue));
   }, [titleValue, slugTouched, setValue]);
@@ -341,6 +350,28 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
             max={100}
           />
           <p className="text-sm text-base-content/60">{uploadProgress}%</p>
+        </div>
+      )}
+
+      {audioSrc && artworkSrc && previewPeaks.length > 0 && (
+        <div className="form-control">
+          <label className="label">
+            <span className="label-text">Homepage preview</span>
+          </label>
+          <ul>
+            <TrackListItem
+              title={titleValue || "Untitled"}
+              tags={previewTags}
+              peaks={previewPeaks}
+              duration={previewDuration}
+              audioSrc={audioSrc}
+              artworkSrc={artworkSrc}
+              timeLabel={track ? timeAgo(track.createdAt) : "Just now"}
+              isPlaying={isPreviewPlaying}
+              onPlay={() => setIsPreviewPlaying(true)}
+              onPause={() => setIsPreviewPlaying(false)}
+            />
+          </ul>
         </div>
       )}
 
