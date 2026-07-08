@@ -18,9 +18,10 @@ const createTrackSchema = z.object({
   description: z.string({ error: "Description is required" }).min(1, "Description is required"),
   tags: z.string().optional(),
   slug: z.string().optional(),
-  audioFile: z
-    .instanceof(File, { message: "Audio file is required" })
-    .refine((file) => file.size > 0, "Audio file is required"),
+  audioFileKey: z
+    .string({ error: "Audio file is required" })
+    .min(1, "Audio file is required")
+    .refine((key) => key.startsWith("tracks/audio/"), "Invalid audio file"),
   artworkFile: z
     .instanceof(File, { message: "Artwork file is required" })
     .refine((file) => file.size > 0, "Artwork file is required"),
@@ -60,8 +61,14 @@ export const tracksRouter = new Hono()
       }
     }),
     async (c) => {
-      const { title, description, tags: tagsInput, slug: slugInput, audioFile, artworkFile, waveformPreview } =
+      const { title, description, tags: tagsInput, slug: slugInput, audioFileKey, artworkFile, waveformPreview } =
         c.req.valid("form");
+
+      const context = getCloudflareContext();
+      const audioObject = await context.env.MIX_VAULT_R2.head(audioFileKey);
+      if (!audioObject) {
+        return c.json({ error: "Audio file upload not found. Please try uploading again." }, 400);
+      }
 
       const tags = tagsInput
         ? tagsInput
@@ -73,18 +80,11 @@ export const tracksRouter = new Hono()
       const slug = await ensureUniqueSlug(slugInput?.trim() ? slugInput : title);
 
       const id = crypto.randomUUID();
-      const audioFileKey = `tracks/audio/${id}${extensionOf(audioFile.name)}`;
       const artworkFileKey = `tracks/artwork/${id}${extensionOf(artworkFile.name)}`;
 
-      const context = getCloudflareContext();
-      await Promise.all([
-        context.env.MIX_VAULT_R2.put(audioFileKey, await audioFile.arrayBuffer(), {
-          httpMetadata: { contentType: audioFile.type || undefined },
-        }),
-        context.env.MIX_VAULT_R2.put(artworkFileKey, await artworkFile.arrayBuffer(), {
-          httpMetadata: { contentType: artworkFile.type || undefined },
-        }),
-      ]);
+      await context.env.MIX_VAULT_R2.put(artworkFileKey, await artworkFile.arrayBuffer(), {
+        httpMetadata: { contentType: artworkFile.type || undefined },
+      });
 
       const db = getDb();
       const [row] = await db

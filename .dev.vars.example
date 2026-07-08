@@ -1,0 +1,4 @@
+# Auth — generate with `pnpm generate:auth-secrets`
+AUTH_USERNAME=
+AUTH_PASSWORD_HASH=
+JWT_SECRET=

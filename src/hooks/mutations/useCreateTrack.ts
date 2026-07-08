@@ -1,30 +1,42 @@
 "use client";
 
 import { apiClient } from "@/lib/api-client";
+import { uploadAudioMultipart } from "@/lib/multipartUpload";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InferRequestType, InferResponseType } from "hono/client";
 
 const createTrackEndpoint = apiClient.api.tracks.$post;
 
-export type CreateTrackInput = InferRequestType<
-  typeof createTrackEndpoint
->["form"];
+type CreateTrackForm = InferRequestType<typeof createTrackEndpoint>["form"];
 type CreateTrackResponse = InferResponseType<typeof createTrackEndpoint, 201>;
+
+export type CreateTrackInput = Omit<CreateTrackForm, "audioFileKey"> & {
+  audioFile: File;
+};
 
 interface CreateTrackVariables extends CreateTrackInput {
   onProgress?: (percent: number) => void;
 }
 
-function createTrack({
+// The audio file is uploaded to R2 in parts before the track is created, so
+// weight it as most of the progress bar and leave the rest for the final call.
+const AUDIO_UPLOAD_WEIGHT = 0.9;
+
+async function createTrack({
   onProgress,
+  audioFile,
   ...form
 }: CreateTrackVariables): Promise<CreateTrackResponse> {
+  const audioFileKey = await uploadAudioMultipart(audioFile, {
+    onProgress: (percent) => onProgress?.(Math.round(percent * AUDIO_UPLOAD_WEIGHT)),
+  });
+
   const formData = new FormData();
   formData.set("title", form.title);
   formData.set("description", form.description);
   if (form.tags !== undefined) formData.set("tags", form.tags);
   if (form.slug !== undefined) formData.set("slug", form.slug);
-  formData.set("audioFile", form.audioFile);
+  formData.set("audioFileKey", audioFileKey);
   formData.set("artworkFile", form.artworkFile);
   formData.set("waveformPreview", form.waveformPreview);
 
@@ -34,7 +46,8 @@ function createTrack({
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
-        onProgress?.(Math.round((event.loaded / event.total) * 100));
+        const remainder = (event.loaded / event.total) * (1 - AUDIO_UPLOAD_WEIGHT) * 100;
+        onProgress?.(Math.round(AUDIO_UPLOAD_WEIGHT * 100 + remainder));
       }
     };
 

@@ -1,3 +1,4 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { SignJWT, jwtVerify } from "jose";
 
 const JWT_ALG = "HS256";
@@ -8,12 +9,13 @@ export interface SessionPayload {
 }
 
 async function getJwtSecretKey() {
-  if (!process.env.JWT_SECRET) {
+  const { env } = getCloudflareContext();
+  if (!env.JWT_SECRET) {
     throw new Error(
       "JWT_SECRET is not configured. Run `pnpm generate:auth-secrets`.",
     );
   }
-  return new TextEncoder().encode(process.env.JWT_SECRET);
+  return new TextEncoder().encode(env.JWT_SECRET);
 }
 
 export async function signSessionToken(
