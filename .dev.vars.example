@@ -8,6 +8,6 @@ JWT_SECRET=
 
 # R2 API token (S3-compatible), for presigned direct-to-R2 uploads.
 # Create via Cloudflare dashboard -> R2 -> Manage API tokens.
-R2_ACCOUNT_ID=
+# (R2_ACCOUNT_ID isn't a secret and lives in wrangler.jsonc's "vars" instead.)
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
