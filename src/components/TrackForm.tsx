@@ -1,7 +1,6 @@
 "use client";
 
 import { TrackListItem } from "@/components/TrackListItem";
-import { Waveform } from "@/components/Waveform";
 import { useCreateTrack } from "@/hooks/mutations/useCreateTrack";
 import { useDeleteTrack } from "@/hooks/mutations/useDeleteTrack";
 import { useUpdateTrack } from "@/hooks/mutations/useUpdateTrack";
@@ -262,11 +261,6 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           <p className="text-sm text-base-content/60 mb-2">
             The audio file can&apos;t be changed after a track is uploaded.
           </p>
-          {existingWaveformPeaks && <Waveform peaks={existingWaveformPeaks} />}
-          {audioSrc && (
-            // eslint-disable-next-line jsx-a11y/media-has-caption
-            <audio controls src={audioSrc} className="w-full mt-2" />
-          )}
         </div>
       ) : (
         <>
@@ -293,15 +287,6 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
             </div>
           )}
 
-          {waveformAnalysis && !isAnalyzing && (
-            <Waveform peaks={waveformAnalysis.peaks} />
-          )}
-
-          {audioSrc && !isAnalyzing && (
-            // eslint-disable-next-line jsx-a11y/media-has-caption
-            <audio controls src={audioSrc} className="w-full mt-2" />
-          )}
-
           {analyzeError && (
             <p className="text-error text-sm" role="alert">
               {analyzeError}
@@ -324,10 +309,6 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           onChange={(e) => setArtworkFile(e.target.files?.[0] ?? null)}
           className="file-input file-input-bordered w-full"
         />
-        {artworkSrc && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={artworkSrc} alt="" className="w-32 h-32 object-cover rounded mt-2" />
-        )}
       </div>
 
       {mutation.error && (
