@@ -42,17 +42,12 @@ export default function AdminPage() {
                 key={track.id}
                 className="list-row hover:bg-base-300 transition-colors flex items-center gap-2"
               >
-                <Link
-                  href={`/admin/tracks/${track.id}/edit`}
-                  className="flex-1 min-w-0 flex items-center gap-2"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold">{track.title}</div>
-                    <div className="text-sm text-base-content/60">/{track.slug}</div>
-                  </div>
-                  <ChevronRightIcon />
+                <Link href={`/admin/tracks/${track.id}/edit`} className="flex-1 min-w-0">
+                  <div className="font-semibold">{track.title}</div>
+                  <div className="text-sm text-base-content/60">/{track.slug}</div>
                 </Link>
                 <CopyLinkButton slug={track.slug} />
+                <ChevronRightIcon />
               </li>
             ))}
           </ul>
