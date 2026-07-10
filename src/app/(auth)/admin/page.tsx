@@ -1,5 +1,6 @@
 "use client";
 
+import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { useListTracks } from "@/hooks/queries/useListTracks";
 import Link from "next/link";
 
@@ -29,16 +30,15 @@ export default function AdminPage() {
         {tracks && tracks.length > 0 && (
           <ul className="list bg-base-200 rounded-box w-full">
             {tracks.map((track) => (
-              <li key={track.id}>
-                <Link
-                  href={`/admin/tracks/${track.id}/edit`}
-                  className="list-row hover:bg-base-300 transition-colors"
-                >
-                  <div>
-                    <div className="font-semibold">{track.title}</div>
-                    <div className="text-sm text-base-content/60">/{track.slug}</div>
-                  </div>
+              <li
+                key={track.id}
+                className="list-row hover:bg-base-300 transition-colors flex items-center gap-2"
+              >
+                <Link href={`/admin/tracks/${track.id}/edit`} className="flex-1 min-w-0">
+                  <div className="font-semibold">{track.title}</div>
+                  <div className="text-sm text-base-content/60">/{track.slug}</div>
                 </Link>
+                <CopyLinkButton slug={track.slug} />
               </li>
             ))}
           </ul>

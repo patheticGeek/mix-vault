@@ -1,5 +1,6 @@
 "use client";
 
+import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { TrackListItem } from "@/components/TrackListItem";
 import { useCreateTrack } from "@/hooks/mutations/useCreateTrack";
 import { useDeleteTrack } from "@/hooks/mutations/useDeleteTrack";
@@ -198,6 +199,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
       <div className="form-control">
         <label className="label" htmlFor="slug">
           <span className="label-text">Slug</span>
+          {isEditMode && track && <CopyLinkButton slug={track.slug} showLabel />}
         </label>
         <input
           id="slug"
@@ -348,6 +350,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
               audioSrc={audioSrc}
               artworkSrc={artworkSrc}
               timeLabel={track ? timeAgo(track.createdAt) : "Just now"}
+              slug={track?.slug}
               isPlaying={isPreviewPlaying}
               onPlay={() => setIsPreviewPlaying(true)}
               onPause={() => setIsPreviewPlaying(false)}

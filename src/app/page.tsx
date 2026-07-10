@@ -48,6 +48,7 @@ export default function Home() {
                 audioSrc={assetUrl(track.audioFile)}
                 artworkSrc={assetUrl(track.artworkFile)}
                 timeLabel={timeAgo(track.createdAt)}
+                slug={track.slug}
                 isPlaying={playingId === track.id}
                 onPlay={() => setPlayingId(track.id)}
                 onPause={() => setPlayingId((current) => (current === track.id ? null : current))}

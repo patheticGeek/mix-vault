@@ -1,5 +1,6 @@
 "use client";
 
+import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { Waveform } from "@/components/Waveform";
 import { useAudio } from "@/hooks/useAudio";
 import { formatDuration } from "@/lib/time";
@@ -37,6 +38,7 @@ interface TrackListItemProps {
   audioSrc: string;
   artworkSrc: string;
   timeLabel: string;
+  slug?: string;
   isPlaying: boolean;
   onPlay: () => void;
   onPause: () => void;
@@ -53,6 +55,7 @@ export function TrackListItem({
   audioSrc,
   artworkSrc,
   timeLabel,
+  slug,
   isPlaying,
   onPlay,
   onPause,
@@ -71,7 +74,7 @@ export function TrackListItem({
   }
 
   return (
-    <li className="grid grid-cols-[auto_1fr] items-stretch gap-4 p-4 bg-base-200 rounded-box">
+    <li id={slug} className="grid grid-cols-[auto_1fr] items-stretch gap-4 p-4 bg-base-200 rounded-box">
       <div className="relative aspect-square rounded overflow-hidden bg-base-300">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
@@ -90,7 +93,10 @@ export function TrackListItem({
       <div className="min-w-0">
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-semibold truncate">{title}</h3>
-          <span className="text-xs text-base-content/60 shrink-0">{timeLabel}</span>
+          <div className="flex items-center gap-1 shrink-0">
+            {slug && <CopyLinkButton slug={slug} />}
+            <span className="text-xs text-base-content/60">{timeLabel}</span>
+          </div>
         </div>
 
         {tags.length > 0 && (
