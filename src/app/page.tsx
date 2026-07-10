@@ -2,6 +2,9 @@
 
 import { TrackListItem } from "@/components/TrackListItem";
 import { useListTracks } from "@/hooks/queries/useListTracks";
+import { assetUrl } from "@/lib/cdn";
+import { timeAgo } from "@/lib/time";
+import { parsePeaks } from "@/lib/waveform";
 import { useState } from "react";
 
 export default function Home() {
@@ -38,7 +41,14 @@ export default function Home() {
             {tracks.map((track) => (
               <TrackListItem
                 key={track.id}
-                track={track}
+                title={track.title}
+                tags={track.tags}
+                peaks={parsePeaks(track.waveformPreview)}
+                duration={track.duration}
+                audioSrc={assetUrl(track.audioFile)}
+                artworkSrc={assetUrl(track.artworkFile)}
+                timeLabel={timeAgo(track.createdAt)}
+                slug={track.slug}
                 isPlaying={playingId === track.id}
                 onPlay={() => setPlayingId(track.id)}
                 onPause={() => setPlayingId((current) => (current === track.id ? null : current))}

@@ -1,11 +1,9 @@
 "use client";
 
+import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { Waveform } from "@/components/Waveform";
-import type { TrackSummary } from "@/hooks/queries/useListTracks";
 import { useAudio } from "@/hooks/useAudio";
-import { assetUrl } from "@/lib/cdn";
-import { formatDuration, timeAgo } from "@/lib/time";
-import { useMemo } from "react";
+import { formatDuration } from "@/lib/time";
 
 function PlayIcon() {
   return (
@@ -33,29 +31,42 @@ function SpinnerIcon() {
 }
 
 interface TrackListItemProps {
-  track: TrackSummary;
+  title: string;
+  tags: string[];
+  peaks: number[];
+  duration: number;
+  audioSrc: string;
+  artworkSrc: string;
+  timeLabel: string;
+  slug?: string;
   isPlaying: boolean;
   onPlay: () => void;
   onPause: () => void;
 }
 
-export function TrackListItem({ track, isPlaying, onPlay, onPause }: TrackListItemProps) {
+// Presentational only — deliberately takes resolved values (urls, parsed
+// peaks, a pre-formatted time label) rather than a raw track record, so the
+// same component can render either a saved track or a live form preview.
+export function TrackListItem({
+  title,
+  tags,
+  peaks,
+  duration,
+  audioSrc,
+  artworkSrc,
+  timeLabel,
+  slug,
+  isPlaying,
+  onPlay,
+  onPause,
+}: TrackListItemProps) {
   const { audioProps, currentTime, isBuffering, seek } = useAudio({
-    src: assetUrl(track.audioFile),
-    duration: track.duration,
+    src: audioSrc,
+    duration,
     isPlaying,
     onPlay,
     onPause,
   });
-
-  const peaks = useMemo(() => {
-    try {
-      const parsed = JSON.parse(track.waveformPreview);
-      return Array.isArray(parsed) ? (parsed as number[]) : [];
-    } catch {
-      return [];
-    }
-  }, [track.waveformPreview]);
 
   function togglePlay() {
     if (isPlaying) onPause();
@@ -63,10 +74,10 @@ export function TrackListItem({ track, isPlaying, onPlay, onPause }: TrackListIt
   }
 
   return (
-    <li className="grid grid-cols-[auto_1fr] items-stretch gap-4 p-4 bg-base-200 rounded-box">
+    <li id={slug} className="grid grid-cols-[auto_1fr] items-stretch gap-4 p-4 bg-base-200 rounded-box">
       <div className="relative aspect-square rounded overflow-hidden bg-base-300">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={assetUrl(track.artworkFile)} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <button
           type="button"
           onClick={togglePlay}
@@ -81,13 +92,16 @@ export function TrackListItem({ track, isPlaying, onPlay, onPause }: TrackListIt
 
       <div className="min-w-0">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-semibold truncate">{track.title}</h3>
-          <span className="text-xs text-base-content/60 shrink-0">{timeAgo(track.createdAt)}</span>
+          <h3 className="font-semibold truncate">{title}</h3>
+          <div className="flex items-center gap-1 shrink-0">
+            {slug && <CopyLinkButton slug={slug} />}
+            <span className="text-xs text-base-content/60">{timeLabel}</span>
+          </div>
         </div>
 
-        {track.tags.length > 0 && (
+        {tags.length > 0 && (
           <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1">
-            {track.tags.map((tag) => (
+            {tags.map((tag) => (
               <span key={tag} className="text-xs text-base-content/50">
                 #{tag}
               </span>
@@ -96,12 +110,12 @@ export function TrackListItem({ track, isPlaying, onPlay, onPause }: TrackListIt
         )}
 
         <div className="relative mt-3">
-          <Waveform peaks={peaks} progress={track.duration ? currentTime / track.duration : 0} onSeek={seek} />
+          <Waveform peaks={peaks} progress={duration ? currentTime / duration : 0} onSeek={seek} />
           <span className="absolute bottom-0.5 left-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
             {formatDuration(currentTime)}
           </span>
           <span className="absolute bottom-0.5 right-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
-            {formatDuration(track.duration)}
+            {formatDuration(duration)}
           </span>
         </div>
       </div>

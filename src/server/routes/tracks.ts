@@ -4,7 +4,7 @@ import { normalizeTrackRow } from "@/lib/db/schema";
 import { ensureUniqueSlug } from "@/lib/slug";
 import { zValidator } from "@hono/zod-validator";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -30,6 +30,10 @@ const createTrackSchema = z.object({
     .string({ error: "Duration is required" })
     .transform((value) => Number(value))
     .refine((value) => Number.isFinite(value) && value > 0, "Duration is required"),
+  recordedAt: z
+    .string()
+    .optional()
+    .transform((value) => (value ? new Date(value) : null)),
 });
 
 const updateTrackSchema = z.object({
@@ -41,12 +45,16 @@ const updateTrackSchema = z.object({
     .instanceof(File, { message: "Invalid artwork file" })
     .refine((file) => file.size > 0, "Artwork file must not be empty")
     .optional(),
+  recordedAt: z
+    .string()
+    .optional()
+    .transform((value) => (value ? new Date(value) : null)),
 });
 
 export const tracksRouter = new Hono()
   .get("/", async (c) => {
     const db = getDb();
-    const rows = await db.select().from(tracks);
+    const rows = await db.select().from(tracks).orderBy(desc(tracks.createdAt));
     return c.json(rows.map(normalizeTrackRow));
   })
   .get("/:id", async (c) => {
@@ -65,8 +73,17 @@ export const tracksRouter = new Hono()
       }
     }),
     async (c) => {
-      const { title, description, tags: tagsInput, slug: slugInput, audioFileKey, artworkFile, waveformPreview, duration } =
-        c.req.valid("form");
+      const {
+        title,
+        description,
+        tags: tagsInput,
+        slug: slugInput,
+        audioFileKey,
+        artworkFile,
+        waveformPreview,
+        duration,
+        recordedAt,
+      } = c.req.valid("form");
 
       const context = getCloudflareContext();
       const audioObject = await context.env.MIX_VAULT_R2.head(audioFileKey);
@@ -102,6 +119,7 @@ export const tracksRouter = new Hono()
           artworkFile: artworkFileKey,
           waveformPreview,
           duration,
+          recordedAt,
           slug,
         })
         .returning();
@@ -119,7 +137,7 @@ export const tracksRouter = new Hono()
     }),
     async (c) => {
       const id = c.req.param("id");
-      const { title, description, tags: tagsInput, slug: slugInput, artworkFile } = c.req.valid("form");
+      const { title, description, tags: tagsInput, slug: slugInput, artworkFile, recordedAt } = c.req.valid("form");
 
       const db = getDb();
       const [existing] = await db.select().from(tracks).where(eq(tracks.id, id)).limit(1);
@@ -158,10 +176,27 @@ export const tracksRouter = new Hono()
           tags: JSON.stringify(tags),
           slug,
           artworkFile: artworkFileKey,
+          recordedAt,
         })
         .where(eq(tracks.id, id))
         .returning();
 
       return c.json(normalizeTrackRow(row), 200);
     },
-  );
+  )
+  .delete("/:id", requireAuth, async (c) => {
+    const id = c.req.param("id");
+    const db = getDb();
+    const [existing] = await db.select().from(tracks).where(eq(tracks.id, id)).limit(1);
+    if (!existing) return c.json({ error: "Track not found" }, 404);
+
+    const context = getCloudflareContext();
+    await Promise.all([
+      context.env.MIX_VAULT_R2.delete(existing.audioFile),
+      context.env.MIX_VAULT_R2.delete(existing.artworkFile),
+    ]);
+
+    await db.delete(tracks).where(eq(tracks.id, id));
+
+    return c.body(null, 204);
+  });

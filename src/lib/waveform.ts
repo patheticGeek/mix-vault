@@ -5,6 +5,15 @@ export interface WaveformAnalysis {
   duration: number;
 }
 
+export function parsePeaks(waveformPreview: string): number[] {
+  try {
+    const parsed = JSON.parse(waveformPreview);
+    return Array.isArray(parsed) ? (parsed as number[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function extractWaveformPeaks(file: File): Promise<WaveformAnalysis> {
   const arrayBuffer = await file.arrayBuffer();
   const audioContext = new AudioContext();

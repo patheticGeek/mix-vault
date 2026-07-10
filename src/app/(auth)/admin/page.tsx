@@ -1,7 +1,16 @@
 "use client";
 
+import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { useListTracks } from "@/hooks/queries/useListTracks";
 import Link from "next/link";
+
+function ChevronRightIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 shrink-0">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
 
 export default function AdminPage() {
   const { data: tracks, isLoading, error } = useListTracks();
@@ -29,16 +38,16 @@ export default function AdminPage() {
         {tracks && tracks.length > 0 && (
           <ul className="list bg-base-200 rounded-box w-full">
             {tracks.map((track) => (
-              <li key={track.id}>
-                <Link
-                  href={`/admin/tracks/${track.id}/edit`}
-                  className="list-row hover:bg-base-300 transition-colors"
-                >
-                  <div>
-                    <div className="font-semibold">{track.title}</div>
-                    <div className="text-sm text-base-content/60">/{track.slug}</div>
-                  </div>
+              <li
+                key={track.id}
+                className="list-row hover:bg-base-300 transition-colors flex items-center gap-2"
+              >
+                <Link href={`/admin/tracks/${track.id}/edit`} className="flex-1 min-w-0">
+                  <div className="font-semibold">{track.title}</div>
+                  <div className="text-sm text-base-content/60">/{track.slug}</div>
                 </Link>
+                <CopyLinkButton slug={track.slug} />
+                <ChevronRightIcon />
               </li>
             ))}
           </ul>

@@ -1,0 +1,1 @@
+ALTER TABLE `tracks` ADD `recorded_at` integer;

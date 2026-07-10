@@ -1,10 +1,14 @@
 "use client";
 
+import { CopyLinkButton } from "@/components/CopyLinkButton";
+import { TrackListItem } from "@/components/TrackListItem";
 import { useCreateTrack } from "@/hooks/mutations/useCreateTrack";
+import { useDeleteTrack } from "@/hooks/mutations/useDeleteTrack";
 import { useUpdateTrack } from "@/hooks/mutations/useUpdateTrack";
 import type { TrackResponse } from "@/hooks/queries/useTrack";
-import { Waveform } from "@/components/Waveform";
-import { extractWaveformPeaks, type WaveformAnalysis } from "@/lib/waveform";
+import { assetUrl } from "@/lib/cdn";
+import { timeAgo } from "@/lib/time";
+import { extractWaveformPeaks, parsePeaks, type WaveformAnalysis } from "@/lib/waveform";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -17,11 +21,34 @@ function slugify(input: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+function toDateInputValue(date: Date | number | string): string {
+  return new Date(date).toISOString().slice(0, 10);
+}
+
+// Creates an object URL for local file previews (artwork image, audio
+// playback) and revokes it on cleanup so we don't leak blob URLs.
+function useObjectUrl(file: File | null): string | null {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) {
+      setUrl(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
+
+  return url;
+}
+
 interface TrackFormValues {
   title: string;
   slug: string;
   description: string;
   tags: string;
+  recordedAt: string;
 }
 
 export function TrackForm({ track }: { track?: TrackResponse }) {
@@ -29,6 +56,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   const router = useRouter();
   const createTrack = useCreateTrack();
   const updateTrack = useUpdateTrack(track?.id ?? "");
+  const deleteTrack = useDeleteTrack();
   const mutation = isEditMode ? updateTrack : createTrack;
 
   const { register, handleSubmit, watch, setValue } = useForm<TrackFormValues>({
@@ -37,6 +65,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
       slug: track?.slug ?? "",
       description: track?.description ?? "",
       tags: track?.tags.join(", ") ?? "",
+      recordedAt: track?.recordedAt ? toDateInputValue(track.recordedAt) : "",
     },
   });
 
@@ -48,17 +77,29 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const existingWaveformPeaks = useMemo(() => {
-    if (!track) return null;
-    try {
-      const parsed = JSON.parse(track.waveformPreview);
-      return Array.isArray(parsed) ? (parsed as number[]) : null;
-    } catch {
-      return null;
-    }
-  }, [track]);
+  const audioPreviewUrl = useObjectUrl(audioFile);
+  const artworkPreviewUrl = useObjectUrl(artworkFile);
+  const audioSrc = audioPreviewUrl ?? (track ? assetUrl(track.audioFile) : null);
+  const artworkSrc = artworkPreviewUrl ?? (track ? assetUrl(track.artworkFile) : null);
+
+  const existingWaveformPeaks = useMemo(
+    () => (track ? parsePeaks(track.waveformPreview) : null),
+    [track],
+  );
+
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const previewPeaks = waveformAnalysis?.peaks ?? existingWaveformPeaks ?? [];
+  const previewDuration = waveformAnalysis?.duration ?? track?.duration ?? 0;
 
   const titleValue = watch("title");
+  const tagsValue = watch("tags");
+  const previewTags = tagsValue
+    ? tagsValue
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    : [];
+
   useEffect(() => {
     if (!slugTouched) setValue("slug", slugify(titleValue));
   }, [titleValue, slugTouched, setValue]);
@@ -71,6 +112,11 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
     setAnalyzeError(null);
     if (!file) return;
 
+    // File.lastModified is the closest thing browsers expose to a
+    // "created" date — a reasonable default for when a mix was recorded,
+    // since audio files are rarely touched again after export.
+    setValue("recordedAt", toDateInputValue(file.lastModified));
+
     setIsAnalyzing(true);
     try {
       const analysis = await extractWaveformPeaks(file);
@@ -82,6 +128,18 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
     }
   }
 
+  async function handleDelete() {
+    if (!track) return;
+    if (!confirm(`Delete "${track.title}"? This can't be undone.`)) return;
+
+    try {
+      await deleteTrack.mutateAsync(track.id);
+      router.push("/admin");
+    } catch {
+      // deleteTrack.error already reflects the failure
+    }
+  }
+
   async function onSubmit(values: TrackFormValues) {
     if (isEditMode && track) {
       try {
@@ -90,6 +148,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           description: values.description,
           tags: values.tags,
           slug: values.slug,
+          recordedAt: values.recordedAt,
           artworkFile: artworkFile ?? undefined,
         });
         router.push("/admin");
@@ -108,6 +167,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
         description: values.description,
         tags: values.tags,
         slug: values.slug,
+        recordedAt: values.recordedAt,
         audioFile,
         artworkFile,
         waveformPreview: JSON.stringify(waveformAnalysis.peaks),
@@ -139,6 +199,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
       <div className="form-control">
         <label className="label" htmlFor="slug">
           <span className="label-text">Slug</span>
+          {isEditMode && track && <CopyLinkButton slug={track.slug} showLabel />}
         </label>
         <input
           id="slug"
@@ -182,6 +243,18 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
         />
       </div>
 
+      <div className="form-control">
+        <label className="label" htmlFor="recordedAt">
+          <span className="label-text">Recorded at</span>
+        </label>
+        <input
+          id="recordedAt"
+          type="date"
+          className="input input-bordered w-full"
+          {...register("recordedAt")}
+        />
+      </div>
+
       {isEditMode ? (
         <div className="form-control">
           <label className="label">
@@ -190,9 +263,6 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           <p className="text-sm text-base-content/60 mb-2">
             The audio file can&apos;t be changed after a track is uploaded.
           </p>
-          {existingWaveformPeaks && (
-            <Waveform peaks={existingWaveformPeaks} />
-          )}
         </div>
       ) : (
         <>
@@ -217,10 +287,6 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
               <span className="loading loading-spinner loading-sm" />
               Analyzing waveform...
             </div>
-          )}
-
-          {waveformAnalysis && !isAnalyzing && (
-            <Waveform peaks={waveformAnalysis.peaks} />
           )}
 
           {analyzeError && (
@@ -253,6 +319,12 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
         </p>
       )}
 
+      {deleteTrack.error && (
+        <p className="text-error text-sm" role="alert">
+          {deleteTrack.error.message}
+        </p>
+      )}
+
       {!isEditMode && createTrack.isPending && (
         <div className="space-y-1">
           <progress
@@ -264,29 +336,65 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
         </div>
       )}
 
-      <div className="flex gap-2 pt-2">
-        <button
-          type="submit"
-          disabled={isAnalyzing || mutation.isPending}
-          className="btn btn-primary"
-        >
-          {isEditMode
-            ? updateTrack.isPending
-              ? "Saving..."
-              : "Save changes"
-            : isAnalyzing
-              ? "Analyzing..."
-              : createTrack.isPending
-                ? "Uploading..."
-                : "Upload track"}
-        </button>
-        <button
-          type="button"
-          onClick={() => router.push("/admin")}
-          className="btn btn-ghost"
-        >
-          Cancel
-        </button>
+      {audioSrc && artworkSrc && previewPeaks.length > 0 && (
+        <div className="form-control">
+          <label className="label">
+            <span className="label-text">Homepage preview</span>
+          </label>
+          <ul>
+            <TrackListItem
+              title={titleValue || "Untitled"}
+              tags={previewTags}
+              peaks={previewPeaks}
+              duration={previewDuration}
+              audioSrc={audioSrc}
+              artworkSrc={artworkSrc}
+              timeLabel={track ? timeAgo(track.createdAt) : "Just now"}
+              slug={track?.slug}
+              isPlaying={isPreviewPlaying}
+              onPlay={() => setIsPreviewPlaying(true)}
+              onPause={() => setIsPreviewPlaying(false)}
+            />
+          </ul>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-2 pt-2">
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            disabled={isAnalyzing || mutation.isPending}
+            className="btn btn-primary"
+          >
+            {isEditMode
+              ? updateTrack.isPending
+                ? "Saving..."
+                : "Save changes"
+              : isAnalyzing
+                ? "Analyzing..."
+                : createTrack.isPending
+                  ? "Uploading..."
+                  : "Upload track"}
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/admin")}
+            className="btn btn-ghost"
+          >
+            Cancel
+          </button>
+        </div>
+
+        {isEditMode && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleteTrack.isPending}
+            className="btn btn-error btn-outline"
+          >
+            {deleteTrack.isPending ? "Deleting..." : "Delete track"}
+          </button>
+        )}
       </div>
     </form>
   );

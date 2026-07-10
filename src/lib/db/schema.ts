@@ -12,6 +12,7 @@ export const trackSchema = z.object({
   waveformPreview: z.string(),
   duration: z.number(),
   slug: z.string(),
+  recordedAt: z.date().nullable(),
   createdAt: z.date(),
 });
 
@@ -37,6 +38,14 @@ export function normalizeTrackRow(raw: unknown): Track {
           : typeof row.createdAt === "string"
             ? new Date(row.createdAt)
             : new Date(),
+    recordedAt:
+      row.recordedAt instanceof Date
+        ? row.recordedAt
+        : typeof row.recordedAt === "number"
+          ? new Date(row.recordedAt)
+          : typeof row.recordedAt === "string"
+            ? new Date(row.recordedAt)
+            : null,
   });
 }
 
@@ -52,6 +61,7 @@ export const tracks = sqliteTable(
     waveformPreview: text("waveform_preview").notNull(),
     duration: real("duration").notNull(),
     slug: text("slug").notNull().unique(),
+    recordedAt: integer("recorded_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast((julianday('now') - 2440587.5)*86400000 as integer))`)
       .notNull(),
