@@ -1,5 +1,6 @@
 import { requireAuth } from "@/lib/auth/session";
 import { abortMultipartUpload, completeMultipartUpload, createMultipartUpload, presignUploadPart } from "@/lib/r2S3";
+import { TRACK_ASSET_KEY_RE, trackAssetKey } from "@/lib/trackAssetKey";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -10,13 +11,15 @@ function extensionOf(filename: string): string {
 }
 
 const createUploadSchema = z.object({
+  trackId: z.string().uuid("Invalid track id"),
+  contentHash: z.string().regex(/^[0-9a-f]{64}$/, "Invalid content hash"),
   filename: z.string().min(1, "Filename is required"),
   contentType: z.string().optional(),
   partCount: z.number().int().min(1).max(10000),
 });
 
 const completeSchema = z.object({
-  key: z.string().min(1),
+  key: z.string().regex(TRACK_ASSET_KEY_RE, "Invalid upload key"),
   uploadId: z.string().min(1),
   parts: z
     .array(z.object({ partNumber: z.number().int().min(1), etag: z.string().min(1) }))
@@ -24,7 +27,7 @@ const completeSchema = z.object({
 });
 
 const abortSchema = z.object({
-  key: z.string().min(1),
+  key: z.string().regex(TRACK_ASSET_KEY_RE, "Invalid upload key"),
   uploadId: z.string().min(1),
 });
 
@@ -38,8 +41,8 @@ export const uploadsRouter = new Hono()
       }
     }),
     async (c) => {
-      const { filename, contentType, partCount } = c.req.valid("json");
-      const key = `tracks/audio/${crypto.randomUUID()}${extensionOf(filename)}`;
+      const { trackId, contentHash, filename, contentType, partCount } = c.req.valid("json");
+      const key = trackAssetKey(trackId, contentHash, extensionOf(filename));
 
       try {
         const uploadId = await createMultipartUpload(key, contentType);
@@ -67,9 +70,6 @@ export const uploadsRouter = new Hono()
     }),
     async (c) => {
       const { key, uploadId, parts } = c.req.valid("json");
-      if (!key.startsWith("tracks/audio/")) {
-        return c.json({ error: "Invalid upload key" }, 400);
-      }
 
       try {
         await completeMultipartUpload(key, uploadId, parts);
@@ -90,9 +90,6 @@ export const uploadsRouter = new Hono()
     }),
     async (c) => {
       const { key, uploadId } = c.req.valid("json");
-      if (!key.startsWith("tracks/audio/")) {
-        return c.json({ error: "Invalid upload key" }, 400);
-      }
 
       try {
         await abortMultipartUpload(key, uploadId);

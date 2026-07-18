@@ -10,7 +10,7 @@ const createTrackEndpoint = apiClient.api.tracks.$post;
 type CreateTrackForm = InferRequestType<typeof createTrackEndpoint>["form"];
 type CreateTrackResponse = InferResponseType<typeof createTrackEndpoint, 201>;
 
-export type CreateTrackInput = Omit<CreateTrackForm, "audioFileKey" | "duration"> & {
+export type CreateTrackInput = Omit<CreateTrackForm, "trackId" | "audioFileKey" | "duration"> & {
   audioFile: File;
   duration: number;
 };
@@ -28,11 +28,13 @@ async function createTrack({
   audioFile,
   ...form
 }: CreateTrackVariables): Promise<CreateTrackResponse> {
-  const audioFileKey = await uploadAudioMultipart(audioFile, {
+  const trackId = crypto.randomUUID();
+  const audioFileKey = await uploadAudioMultipart(audioFile, trackId, {
     onProgress: (percent) => onProgress?.(Math.round(percent * AUDIO_UPLOAD_WEIGHT)),
   });
 
   const formData = new FormData();
+  formData.set("trackId", trackId);
   formData.set("title", form.title);
   formData.set("description", form.description);
   if (form.tags !== undefined) formData.set("tags", form.tags);
