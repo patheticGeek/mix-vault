@@ -21,6 +21,27 @@ function useIsHashTarget(slug?: string): boolean {
   return Boolean(slug) && hash === slug;
 }
 
+const HASH_FLASH_MS = 5000;
+
+// The background flash fades out after a few seconds, but the border stays
+// as long as the hash keeps pointing here — otherwise a track you're still
+// looking at loses all trace of being the shared one.
+function useHashFlash(isHashTarget: boolean): boolean {
+  const [flash, setFlash] = useState(false);
+
+  useEffect(() => {
+    if (!isHashTarget) {
+      setFlash(false);
+      return;
+    }
+    setFlash(true);
+    const timeout = setTimeout(() => setFlash(false), HASH_FLASH_MS);
+    return () => clearTimeout(timeout);
+  }, [isHashTarget]);
+
+  return flash;
+}
+
 function PlayIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 translate-x-0.5">
@@ -84,6 +105,7 @@ export function TrackListItem({
     onPause,
   });
   const isHashTarget = useIsHashTarget(slug);
+  const hashFlash = useHashFlash(isHashTarget);
 
   function togglePlay() {
     if (isPlaying) onPause();
@@ -94,8 +116,8 @@ export function TrackListItem({
     <li
       id={slug}
       className={`grid grid-cols-[auto_1fr] items-stretch gap-4 p-4 rounded-box transition-colors duration-500 ${
-        isHashTarget ? "bg-yellow-400/20 ring-2 ring-yellow-400" : "bg-base-200"
-      }`}
+        isHashTarget ? "ring-2 ring-yellow-400" : ""
+      } ${hashFlash ? "bg-yellow-400/20" : "bg-base-200"}`}
     >
       <div className="relative aspect-square rounded overflow-hidden bg-base-300">
         {/* eslint-disable-next-line @next/next/no-img-element */}
