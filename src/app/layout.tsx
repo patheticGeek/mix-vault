@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/Navbar";
 import Providers from "@/components/Providers";
+import { APP_DESC, APP_TITLE } from "@/config";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -15,9 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mix Vault",
-  description:
-    "A secure creative collaboration vault with a dark daisyUI theme.",
+  title: APP_TITLE,
+  description: APP_DESC,
 };
 
 export default function RootLayout({

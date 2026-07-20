@@ -4,6 +4,7 @@ import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { Waveform } from "@/components/Waveform";
 import { useAudio } from "@/hooks/useAudio";
 import { formatDuration } from "@/lib/time";
+import { Loader2, Pause, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 
 // Tracks whether the page's #hash currently points at this slug, so a
@@ -40,31 +41,6 @@ function useHashFlash(isHashTarget: boolean): boolean {
   }, [isHashTarget]);
 
   return flash;
-}
-
-function PlayIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 translate-x-0.5">
-      <path d="M8 5v14l11-7z" />
-    </svg>
-  );
-}
-
-function PauseIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-      <path d="M6 5h4v14H6zM14 5h4v14h-4z" />
-    </svg>
-  );
-}
-
-function SpinnerIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 animate-spin">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
-      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-    </svg>
-  );
 }
 
 interface TrackListItemProps {
@@ -129,7 +105,15 @@ export function TrackListItem({
           className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/40 transition-colors"
         >
           <span className="flex items-center justify-center w-12 h-12 rounded-full bg-base-100/90 text-base-content">
-            {isPlaying ? isBuffering ? <SpinnerIcon /> : <PauseIcon /> : <PlayIcon />}
+            {isPlaying ? (
+              isBuffering ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                <Pause className="w-6 h-6" fill="currentColor" />
+              )
+            ) : (
+              <Play className="w-6 h-6 translate-x-0.5" fill="currentColor" />
+            )}
           </span>
         </button>
       </div>
