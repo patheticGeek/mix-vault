@@ -116,7 +116,7 @@ export function TrackListItem({
     <li
       id={slug}
       className={`grid grid-cols-[auto_1fr] items-stretch gap-4 p-4 rounded-box transition-colors duration-500 ${
-        isHashTarget ? "ring-2 ring-yellow-400" : ""
+        isHashTarget ? "ring-1 ring-yellow-400" : ""
       } ${hashFlash ? "bg-yellow-400/20" : "bg-base-200"}`}
     >
       <div className="relative aspect-square rounded overflow-hidden bg-base-300">
