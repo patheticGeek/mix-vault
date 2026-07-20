@@ -4,6 +4,43 @@ import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { Waveform } from "@/components/Waveform";
 import { useAudio } from "@/hooks/useAudio";
 import { formatDuration } from "@/lib/time";
+import { useEffect, useState } from "react";
+
+// Tracks whether the page's #hash currently points at this slug, so a
+// shared link (see CopyLinkButton) can highlight the track it targets.
+function useIsHashTarget(slug?: string): boolean {
+  const [hash, setHash] = useState<string | null>(null);
+
+  useEffect(() => {
+    const readHash = () => setHash(window.location.hash.slice(1) || null);
+    readHash();
+    window.addEventListener("hashchange", readHash);
+    return () => window.removeEventListener("hashchange", readHash);
+  }, []);
+
+  return Boolean(slug) && hash === slug;
+}
+
+const HASH_FLASH_MS = 5000;
+
+// The background flash fades out after a few seconds, but the border stays
+// as long as the hash keeps pointing here — otherwise a track you're still
+// looking at loses all trace of being the shared one.
+function useHashFlash(isHashTarget: boolean): boolean {
+  const [flash, setFlash] = useState(false);
+
+  useEffect(() => {
+    if (!isHashTarget) {
+      setFlash(false);
+      return;
+    }
+    setFlash(true);
+    const timeout = setTimeout(() => setFlash(false), HASH_FLASH_MS);
+    return () => clearTimeout(timeout);
+  }, [isHashTarget]);
+
+  return flash;
+}
 
 function PlayIcon() {
   return (
@@ -67,6 +104,8 @@ export function TrackListItem({
     onPlay,
     onPause,
   });
+  const isHashTarget = useIsHashTarget(slug);
+  const hashFlash = useHashFlash(isHashTarget);
 
   function togglePlay() {
     if (isPlaying) onPause();
@@ -74,7 +113,12 @@ export function TrackListItem({
   }
 
   return (
-    <li id={slug} className="grid grid-cols-[auto_1fr] items-stretch gap-4 p-4 bg-base-200 rounded-box">
+    <li
+      id={slug}
+      className={`grid grid-cols-[auto_1fr] items-stretch gap-4 p-4 rounded-box transition-colors duration-500 ${
+        isHashTarget ? "ring-1 ring-yellow-400" : ""
+      } ${hashFlash ? "bg-yellow-400/20" : "bg-base-200"}`}
+    >
       <div className="relative aspect-square rounded overflow-hidden bg-base-300">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />

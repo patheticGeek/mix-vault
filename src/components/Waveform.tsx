@@ -16,7 +16,7 @@ export function Waveform({ peaks, progress = 0, onSeek, className = "" }: Wavefo
 
   return (
     <div
-      className={`flex items-end gap-px h-12 w-full ${onSeek ? "cursor-pointer" : ""} ${className}`}
+      className={`flex items-center gap-px h-12 w-full ${onSeek ? "cursor-pointer" : ""} ${className}`}
       onClick={(e) => {
         if (!onSeek) return;
         const rect = e.currentTarget.getBoundingClientRect();
