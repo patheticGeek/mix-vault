@@ -1,7 +1,9 @@
 import { requireAuth } from "@/lib/auth/session";
+import { sha256Hex } from "@/lib/contentHash";
 import { getDb, tracks } from "@/lib/db";
 import { normalizeTrackRow } from "@/lib/db/schema";
 import { ensureUniqueSlug } from "@/lib/slug";
+import { trackAssetKey } from "@/lib/trackAssetKey";
 import { zValidator } from "@hono/zod-validator";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { desc, eq } from "drizzle-orm";
@@ -13,28 +15,31 @@ function extensionOf(filename: string): string {
   return dot === -1 ? "" : filename.slice(dot);
 }
 
-const createTrackSchema = z.object({
-  title: z.string({ error: "Title is required" }).min(1, "Title is required"),
-  description: z.string({ error: "Description is required" }).min(1, "Description is required"),
-  tags: z.string().optional(),
-  slug: z.string().optional(),
-  audioFileKey: z
-    .string({ error: "Audio file is required" })
-    .min(1, "Audio file is required")
-    .refine((key) => key.startsWith("tracks/audio/"), "Invalid audio file"),
-  artworkFile: z
-    .instanceof(File, { message: "Artwork file is required" })
-    .refine((file) => file.size > 0, "Artwork file is required"),
-  waveformPreview: z.string({ error: "Waveform preview is required" }).min(1, "Waveform preview is required"),
-  duration: z
-    .string({ error: "Duration is required" })
-    .transform((value) => Number(value))
-    .refine((value) => Number.isFinite(value) && value > 0, "Duration is required"),
-  recordedAt: z
-    .string()
-    .optional()
-    .transform((value) => (value ? new Date(value) : null)),
-});
+const createTrackSchema = z
+  .object({
+    trackId: z.string().uuid("Invalid track id"),
+    title: z.string({ error: "Title is required" }).min(1, "Title is required"),
+    description: z.string({ error: "Description is required" }).min(1, "Description is required"),
+    tags: z.string().optional(),
+    slug: z.string().optional(),
+    audioFileKey: z.string({ error: "Audio file is required" }).min(1, "Audio file is required"),
+    artworkFile: z
+      .instanceof(File, { message: "Artwork file is required" })
+      .refine((file) => file.size > 0, "Artwork file is required"),
+    waveformPreview: z.string({ error: "Waveform preview is required" }).min(1, "Waveform preview is required"),
+    duration: z
+      .string({ error: "Duration is required" })
+      .transform((value) => Number(value))
+      .refine((value) => Number.isFinite(value) && value > 0, "Duration is required"),
+    recordedAt: z
+      .string()
+      .optional()
+      .transform((value) => (value ? new Date(value) : null)),
+  })
+  .refine((data) => data.audioFileKey.startsWith(`tracks/${data.trackId}/`), {
+    message: "Invalid audio file",
+    path: ["audioFileKey"],
+  });
 
 const updateTrackSchema = z.object({
   title: z.string({ error: "Title is required" }).min(1, "Title is required"),
@@ -74,6 +79,7 @@ export const tracksRouter = new Hono()
     }),
     async (c) => {
       const {
+        trackId,
         title,
         description,
         tags: tagsInput,
@@ -100,10 +106,12 @@ export const tracksRouter = new Hono()
 
       const slug = await ensureUniqueSlug(slugInput?.trim() ? slugInput : title);
 
-      const id = crypto.randomUUID();
-      const artworkFileKey = `tracks/artwork/${id}${extensionOf(artworkFile.name)}`;
+      const id = trackId;
+      const artworkBuffer = await artworkFile.arrayBuffer();
+      const artworkHash = await sha256Hex(artworkBuffer);
+      const artworkFileKey = trackAssetKey(id, artworkHash, extensionOf(artworkFile.name));
 
-      await context.env.MIX_VAULT_R2.put(artworkFileKey, await artworkFile.arrayBuffer(), {
+      await context.env.MIX_VAULT_R2.put(artworkFileKey, artworkBuffer, {
         httpMetadata: { contentType: artworkFile.type || undefined },
       });
 
@@ -158,8 +166,10 @@ export const tracksRouter = new Hono()
       let artworkFileKey = existing.artworkFile;
       if (artworkFile) {
         const context = getCloudflareContext();
-        const newArtworkFileKey = `tracks/artwork/${id}${extensionOf(artworkFile.name)}`;
-        await context.env.MIX_VAULT_R2.put(newArtworkFileKey, await artworkFile.arrayBuffer(), {
+        const artworkBuffer = await artworkFile.arrayBuffer();
+        const artworkHash = await sha256Hex(artworkBuffer);
+        const newArtworkFileKey = trackAssetKey(id, artworkHash, extensionOf(artworkFile.name));
+        await context.env.MIX_VAULT_R2.put(newArtworkFileKey, artworkBuffer, {
           httpMetadata: { contentType: artworkFile.type || undefined },
         });
         if (newArtworkFileKey !== existing.artworkFile) {

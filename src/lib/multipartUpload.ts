@@ -1,3 +1,5 @@
+import { sha256Hex } from "@/lib/contentHash";
+
 // 32MB keeps large files to a few hundred requests instead of a few thousand.
 // R2 requires parts to be at least 5MiB, except the last one.
 const PART_SIZE = 32 * 1024 * 1024;
@@ -96,15 +98,26 @@ async function putPartWithRetry(
   }
 }
 
-export async function uploadAudioMultipart(file: File, { onProgress }: UploadAudioOptions = {}): Promise<string> {
+export async function uploadAudioMultipart(
+  file: File,
+  trackId: string,
+  { onProgress }: UploadAudioOptions = {},
+): Promise<string> {
   if (file.size === 0) throw new Error("Audio file is required");
 
   const partCount = Math.ceil(file.size / PART_SIZE);
+  const contentHash = await sha256Hex(await file.arrayBuffer());
 
   const createRes = await fetch("/api/uploads/audio", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ filename: file.name, contentType: file.type || undefined, partCount }),
+    body: JSON.stringify({
+      trackId,
+      contentHash,
+      filename: file.name,
+      contentType: file.type || undefined,
+      partCount,
+    }),
   });
   if (!createRes.ok) {
     throw new Error(await parseErrorMessage(createRes, "Failed to start audio upload"));
