@@ -107,7 +107,7 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
             className="btn btn-ghost btn-xs gap-1"
           >
             <Icon className="w-4 h-4" />
-            {TRACK_LINK_LABELS[key]}
+            Listen on {TRACK_LINK_LABELS[key]}
           </a>
         );
       })}
