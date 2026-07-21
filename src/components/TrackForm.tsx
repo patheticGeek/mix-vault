@@ -7,6 +7,7 @@ import { useCreateTrack } from "@/hooks/mutations/useCreateTrack";
 import { useDeleteTrack } from "@/hooks/mutations/useDeleteTrack";
 import { useUpdateTrack } from "@/hooks/mutations/useUpdateTrack";
 import type { TrackResponse } from "@/hooks/queries/useTrack";
+import { extractAudioMetadata } from "@/lib/audioMetadata";
 import { assetUrl } from "@/lib/cdn";
 import { timeAgo } from "@/lib/time";
 import { TRACK_LINK_KEYS, type TrackLinkKey } from "@/lib/trackLinks";
@@ -62,7 +63,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   const deleteTrack = useDeleteTrack();
   const mutation = isEditMode ? updateTrack : createTrack;
 
-  const { register, handleSubmit, watch, setValue } = useForm<TrackFormValues>({
+  const { register, handleSubmit, watch, setValue, getValues } = useForm<TrackFormValues>({
     defaultValues: {
       title: track?.title ?? "",
       slug: track?.slug ?? "",
@@ -125,10 +126,19 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
     setAnalyzeError(null);
     if (!file) return;
 
-    // File.lastModified is the closest thing browsers expose to a
-    // "created" date — a reasonable default for when a mix was recorded,
-    // since audio files are rarely touched again after export.
-    setValue("recordedAt", toDateInputValue(file.lastModified));
+    const metadata = await extractAudioMetadata(file);
+
+    if (!getValues("title").trim() && metadata.title) {
+      setValue("title", metadata.title);
+    }
+
+    // Prefer a recording date embedded in the file's own tags; file's
+    // lastModified is the closest fallback browsers expose otherwise, since
+    // audio files are rarely touched again after export. Only fills in if
+    // the field isn't already set, so it never clobbers a manual edit.
+    if (!getValues("recordedAt")) {
+      setValue("recordedAt", toDateInputValue(metadata.recordedAt ?? file.lastModified));
+    }
 
     setIsAnalyzing(true);
     try {
