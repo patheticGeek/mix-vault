@@ -95,7 +95,7 @@ export function TrackListItem({
       id={slug}
       className={`grid grid-cols-[auto_1fr] items-stretch gap-4 p-4 rounded-box transition-colors duration-500 ${
         isPlaying ? "ring-1 ring-zinc-600" : isHashTarget && !hasClickedPlay ? "ring-1 ring-yellow-400" : ""
-      } ${hashFlash ? "bg-yellow-400/20" : "bg-base-200"}`}
+      } ${hashFlash && !hasClickedPlay ? "bg-yellow-400/20" : "bg-base-200"}`}
     >
       <div className="relative aspect-square rounded overflow-hidden bg-base-300">
         {/* eslint-disable-next-line @next/next/no-img-element */}
