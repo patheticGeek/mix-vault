@@ -1,15 +1,20 @@
 import { TrackPageClient } from "@/app/track/[slug]/TrackPageClient";
 import { APP_TITLE } from "@/config";
+import type { TrackBySlugResponse } from "@/hooks/queries/useTrackBySlug";
 import { assetUrl } from "@/lib/cdn";
 import { getDb, tracks } from "@/lib/db";
+import { normalizeTrackRow } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
+import { cache } from "react";
 
-async function getTrackBySlug(slug: string) {
+// cache() dedupes this within a single request, so generateMetadata and the
+// page body below share one DB query instead of two.
+const getTrackBySlug = cache(async (slug: string) => {
   const db = getDb();
   const [row] = await db.select().from(tracks).where(eq(tracks.slug, slug)).limit(1);
   return row ?? null;
-}
+});
 
 export async function generateMetadata({
   params,
@@ -47,5 +52,16 @@ export async function generateMetadata({
 
 export default async function TrackPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  return <TrackPageClient slug={slug} />;
+  const row = await getTrackBySlug(slug);
+
+  // Serialized to match the shape the client's own fetch would get back
+  // over JSON (dates as strings), so react-query can use this as
+  // initialData instead of the client re-fetching on mount — this is what
+  // gets the actual track content (not just a loading spinner) into the
+  // first server-rendered response for crawlers.
+  const initialTrack: TrackBySlugResponse | null = row
+    ? (JSON.parse(JSON.stringify(normalizeTrackRow(row))) as TrackBySlugResponse)
+    : null;
+
+  return <TrackPageClient slug={slug} initialTrack={initialTrack} />;
 }

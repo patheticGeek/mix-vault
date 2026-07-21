@@ -20,10 +20,14 @@ async function fetchTrackBySlug(slug: string): Promise<TrackBySlugResponse | nul
   return res.json();
 }
 
-export function useTrackBySlug(slug: string) {
+// initialData lets a server-rendered page hand off the track it already
+// fetched, so the client doesn't show a loading state (or re-fetch) for
+// data that's already there.
+export function useTrackBySlug(slug: string, initialData?: TrackBySlugResponse | null) {
   return useQuery<TrackBySlugResponse | null, Error>({
     queryKey: ["tracks", "slug", slug],
     queryFn: () => fetchTrackBySlug(slug),
     enabled: Boolean(slug),
+    initialData,
   });
 }

@@ -3,7 +3,7 @@
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { Waveform } from "@/components/Waveform";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
-import { useTrackBySlug } from "@/hooks/queries/useTrackBySlug";
+import { useTrackBySlug, type TrackBySlugResponse } from "@/hooks/queries/useTrackBySlug";
 import { useAudio } from "@/hooks/useAudio";
 import { assetUrl } from "@/lib/cdn";
 import { formatDuration, timeAgo } from "@/lib/time";
@@ -13,8 +13,13 @@ import { ArrowLeft, Loader2, Pause, Play } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-export function TrackPageClient({ slug }: { slug: string }) {
-  const { data: track, isLoading, error } = useTrackBySlug(slug);
+interface TrackPageClientProps {
+  slug: string;
+  initialTrack?: TrackBySlugResponse | null;
+}
+
+export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
+  const { data: track, isLoading, error } = useTrackBySlug(slug, initialTrack);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const { audioProps, currentTime, isBuffering, seek } = useAudio({
