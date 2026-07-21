@@ -65,6 +65,13 @@ export const tracksRouter = new Hono()
     const rows = await db.select().from(tracks).orderBy(desc(tracks.createdAt));
     return c.json(rows.map(normalizeTrackRow));
   })
+  .get("/slug/:slug", async (c) => {
+    const slug = c.req.param("slug");
+    const db = getDb();
+    const [row] = await db.select().from(tracks).where(eq(tracks.slug, slug)).limit(1);
+    if (!row) return c.json({ error: "Track not found" }, 404);
+    return c.json(normalizeTrackRow(row));
+  })
   .get("/:id", async (c) => {
     const id = c.req.param("id");
     const db = getDb();

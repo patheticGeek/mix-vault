@@ -7,6 +7,7 @@ import { useAudio } from "@/hooks/useAudio";
 import { formatDuration } from "@/lib/time";
 import { TRACK_LINK_KEYS, type TrackLinks } from "@/lib/trackLinks";
 import { Loader2, Pause, Play } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 // Tracks whether the page's #hash currently points at this slug, so a
@@ -190,6 +191,21 @@ export function TrackListItem({
     <p className="text-sm text-base-content/70 whitespace-pre-wrap">{description}</p>
   );
 
+  // Links to the track's own page when it has a slug (i.e. it's a saved
+  // track, not a live form preview). `contents` keeps the anchor from
+  // affecting the surrounding flex layout — the h3 underneath still is the
+  // actual flex item.
+  function titleEl(className: string) {
+    const heading = <h3 className={className}>{title}</h3>;
+    return slug ? (
+      <Link href={`/track/${slug}`} className="contents">
+        {heading}
+      </Link>
+    ) : (
+      heading
+    );
+  }
+
   return (
     <li
       id={slug}
@@ -211,7 +227,7 @@ export function TrackListItem({
             {meta}
           </div>
         </div>
-        <h3 className="font-semibold truncate">{title}</h3>
+        {titleEl("font-semibold truncate")}
         {waveform}
         {descriptionEl}
       </div>
@@ -223,7 +239,7 @@ export function TrackListItem({
           {artwork}
           <div className="min-w-0">
             <div className="flex items-start justify-between gap-x-3 gap-y-1 flex-wrap">
-              <h3 className="font-semibold truncate flex-1 min-w-16">{title}</h3>
+              {titleEl("font-semibold truncate flex-1 min-w-16")}
               {meta}
             </div>
             <div className="mt-1">{tagList}</div>
