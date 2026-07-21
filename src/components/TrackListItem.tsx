@@ -130,7 +130,27 @@ export function TrackListItem({
         <div className="min-w-0">
           <div className="flex items-start justify-between gap-3">
             <h3 className="font-semibold truncate">{title}</h3>
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
+              {links && TRACK_LINK_KEYS.some((key) => links[key]) && (
+                <div className="flex items-center gap-1.5">
+                  {TRACK_LINK_KEYS.filter((key) => links[key]).map((key) => {
+                    const Icon = TRACK_LINK_ICONS[key];
+                    return (
+                      <a
+                        key={key}
+                        href={links[key]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={TRACK_LINK_LABELS[key]}
+                        title={TRACK_LINK_LABELS[key]}
+                        className="text-base-content/50 hover:text-base-content transition-colors"
+                      >
+                        <Icon className="w-4 h-4" />
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
               {slug && <CopyLinkButton slug={slug} />}
               <span className="text-xs text-base-content/60">{timeLabel}</span>
             </div>
@@ -159,27 +179,6 @@ export function TrackListItem({
       </div>
 
       {description && <p className="text-sm text-base-content/70 whitespace-pre-wrap">{description}</p>}
-
-      {links && TRACK_LINK_KEYS.some((key) => links[key]) && (
-        <div className="flex items-center gap-2">
-          {TRACK_LINK_KEYS.filter((key) => links[key]).map((key) => {
-            const Icon = TRACK_LINK_ICONS[key];
-            return (
-              <a
-                key={key}
-                href={links[key]}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={TRACK_LINK_LABELS[key]}
-                title={TRACK_LINK_LABELS[key]}
-                className="text-base-content/50 hover:text-base-content transition-colors"
-              >
-                <Icon className="w-4 h-4" />
-              </a>
-            );
-          })}
-        </div>
-      )}
 
       <audio {...audioProps} />
     </li>
