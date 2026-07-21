@@ -104,7 +104,7 @@ export function TrackListItem({
       } ${hashFlash && !hasClickedPlay ? "bg-yellow-400/20" : "bg-base-200"}`}
     >
       <div className="grid grid-cols-[auto_1fr] items-stretch gap-4">
-        <div className="relative aspect-square rounded overflow-hidden bg-base-300">
+        <div className="relative aspect-square w-24 shrink-0 rounded overflow-hidden bg-base-300">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
           <button
@@ -128,8 +128,8 @@ export function TrackListItem({
         </div>
 
         <div className="min-w-0">
-          <div className="flex items-start justify-between gap-3">
-            <h3 className="font-semibold truncate">{title}</h3>
+          <div className="flex items-start justify-between gap-x-3 gap-y-1 flex-wrap">
+            <h3 className="font-semibold truncate flex-1 min-w-16">{title}</h3>
             <div className="flex items-center gap-2 shrink-0">
               {links && TRACK_LINK_KEYS.some((key) => links[key]) && (
                 <div className="flex items-center">
