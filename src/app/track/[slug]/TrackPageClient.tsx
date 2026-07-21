@@ -89,7 +89,7 @@ export function TrackPageClient({ slug }: { slug: string }) {
   );
 
   const linksRow = track && (
-    <div className="flex flex-col items-start gap-1">
+    <div className="flex flex-col items-start self-start gap-1">
       <CopyLinkButton slug={track.slug} showLabel />
       {TRACK_LINK_KEYS.filter((key) => track.links[key]).map((key) => {
         const Icon = TRACK_LINK_ICONS[key];
@@ -145,9 +145,9 @@ export function TrackPageClient({ slug }: { slug: string }) {
                 {dateLine}
               </div>
               {tagList}
-              {linksRow}
               {waveform}
               {descriptionEl}
+              {linksRow}
             </div>
 
             {/* Desktop/tablet landscape: title/date/tags on the left, artwork
