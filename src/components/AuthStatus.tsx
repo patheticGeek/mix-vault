@@ -6,15 +6,7 @@ import Link from "next/link";
 export function AuthStatus() {
   const { user, isLoading, isLoggingOut, logout } = useAuth();
 
-  if (isLoading) return null;
-
-  if (!user) {
-    return (
-      <Link href="/login" className="btn btn-ghost btn-sm">
-        Sign in
-      </Link>
-    );
-  }
+  if (isLoading || !user) return null;
 
   return (
     <div className="flex items-center gap-2">

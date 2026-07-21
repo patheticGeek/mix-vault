@@ -1,6 +1,7 @@
 "use client";
 
 import { TrackListItem } from "@/components/TrackListItem";
+import { APP_DESC, APP_TITLE, SOCIAL_MEDIA } from "@/config";
 import { useListTracks } from "@/hooks/queries/useListTracks";
 import { assetUrl } from "@/lib/cdn";
 import { timeAgo } from "@/lib/time";
@@ -15,11 +16,26 @@ export default function Home() {
     <div className="bg-base-100 text-base-content min-h-[calc(100vh-4rem)]">
       <main className="max-w-3xl mx-auto px-4 py-10">
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold">Mix Vault</h1>
-          <p className="py-2 max-w-xl mx-auto text-base-content/60">
-            A minimal creative vault inspired by modern audio platforms: calm,
-            dark, and focused.
-          </p>
+          <h1 className="text-4xl font-bold">{APP_TITLE}</h1>
+          <p className="py-2 max-w-xl mx-auto text-base-content/60">{APP_DESC}</p>
+
+          {SOCIAL_MEDIA.length > 0 && (
+            <div className="flex items-center justify-center gap-3 pt-2">
+              {SOCIAL_MEDIA.map(({ label, href, icon: Icon }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  title={label}
+                  className="text-base-content/60 hover:text-base-content transition-colors"
+                >
+                  <Icon className="w-5 h-5" />
+                </a>
+              ))}
+            </div>
+          )}
         </div>
 
         {isLoading && (
