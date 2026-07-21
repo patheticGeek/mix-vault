@@ -57,6 +57,7 @@ interface TrackListItemProps {
   slug?: string;
   links?: TrackLinks;
   isPlaying: boolean;
+  isLastPlayed?: boolean;
   onPlay: () => void;
   onPause: () => void;
 }
@@ -76,6 +77,7 @@ export function TrackListItem({
   slug,
   links,
   isPlaying,
+  isLastPlayed = false,
   onPlay,
   onPause,
 }: TrackListItemProps) {
@@ -192,7 +194,11 @@ export function TrackListItem({
     <li
       id={slug}
       className={`flex flex-col gap-3 p-4 rounded-box transition-colors duration-500 ${
-        isPlaying ? "ring-1 ring-zinc-600" : isHashTarget && !hasClickedPlay ? "ring-1 ring-yellow-400" : ""
+        isPlaying || isLastPlayed
+          ? "ring-1 ring-zinc-600"
+          : isHashTarget && !hasClickedPlay
+            ? "ring-1 ring-yellow-400"
+            : ""
       } ${hashFlash && !hasClickedPlay ? "bg-yellow-400/20" : "bg-base-200"}`}
     >
       {/* Mobile: artwork with tags/meta beside it, then title, waveform, and

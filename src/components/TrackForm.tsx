@@ -98,6 +98,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   );
 
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const [hasPreviewPlayed, setHasPreviewPlayed] = useState(false);
   const previewPeaks = waveformAnalysis?.peaks ?? existingWaveformPeaks ?? [];
   const previewDuration = waveformAnalysis?.duration ?? track?.duration ?? 0;
 
@@ -395,7 +396,11 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
               timeLabel={track ? timeAgo(track.createdAt) : "Just now"}
               slug={track?.slug}
               isPlaying={isPreviewPlaying}
-              onPlay={() => setIsPreviewPlaying(true)}
+              isLastPlayed={hasPreviewPlayed}
+              onPlay={() => {
+                setIsPreviewPlaying(true);
+                setHasPreviewPlayed(true);
+              }}
               onPause={() => setIsPreviewPlaying(false)}
             />
           </ul>
