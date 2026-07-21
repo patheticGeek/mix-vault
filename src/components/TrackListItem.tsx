@@ -2,8 +2,10 @@
 
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { Waveform } from "@/components/Waveform";
+import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
 import { useAudio } from "@/hooks/useAudio";
 import { formatDuration } from "@/lib/time";
+import { TRACK_LINK_KEYS, type TrackLinks } from "@/lib/trackLinks";
 import { Loader2, Pause, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -45,6 +47,7 @@ function useHashFlash(isHashTarget: boolean): boolean {
 
 interface TrackListItemProps {
   title: string;
+  description?: string;
   tags: string[];
   peaks: number[];
   duration: number;
@@ -52,7 +55,9 @@ interface TrackListItemProps {
   artworkSrc: string;
   timeLabel: string;
   slug?: string;
+  links?: TrackLinks;
   isPlaying: boolean;
+  isLastPlayed?: boolean;
   onPlay: () => void;
   onPause: () => void;
 }
@@ -62,6 +67,7 @@ interface TrackListItemProps {
 // same component can render either a saved track or a live form preview.
 export function TrackListItem({
   title,
+  description,
   tags,
   peaks,
   duration,
@@ -69,7 +75,9 @@ export function TrackListItem({
   artworkSrc,
   timeLabel,
   slug,
+  links,
   isPlaying,
+  isLastPlayed = false,
   onPlay,
   onPause,
 }: TrackListItemProps) {
@@ -90,64 +98,139 @@ export function TrackListItem({
     else onPlay();
   }
 
+  const artwork = (
+    <div className="relative aspect-square w-24 shrink-0 self-start rounded overflow-hidden bg-base-300">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      <button
+        type="button"
+        onClick={togglePlay}
+        aria-label={isPlaying ? "Pause" : "Play"}
+        className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/40 transition-colors"
+      >
+        <span className="flex items-center justify-center w-12 h-12 rounded-full bg-base-100/90 text-base-content">
+          {isPlaying ? (
+            isBuffering ? (
+              <Loader2 className="w-6 h-6 animate-spin" />
+            ) : (
+              <Pause className="w-6 h-6" fill="currentColor" />
+            )
+          ) : (
+            <Play className="w-6 h-6 translate-x-0.5" fill="currentColor" />
+          )}
+        </span>
+      </button>
+    </div>
+  );
+
+  const meta = (
+    <div className="flex items-center gap-2 shrink-0">
+      {links && TRACK_LINK_KEYS.some((key) => links[key]) && (
+        <div className="flex items-center">
+          {TRACK_LINK_KEYS.filter((key) => links[key]).map((key) => {
+            const Icon = TRACK_LINK_ICONS[key];
+            return (
+              <a
+                key={key}
+                href={links[key]}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={TRACK_LINK_LABELS[key]}
+                title={TRACK_LINK_LABELS[key]}
+                className="btn btn-ghost btn-xs"
+              >
+                <Icon className="w-4 h-4" />
+              </a>
+            );
+          })}
+        </div>
+      )}
+      {slug && <CopyLinkButton slug={slug} />}
+      <span className="text-xs text-base-content/60">{timeLabel}</span>
+    </div>
+  );
+
+  const tagList = tags.length > 0 && (
+    <div className="flex flex-wrap gap-x-2 gap-y-1">
+      {tags.map((tag) => (
+        <span key={tag} className="text-xs text-base-content/50">
+          #{tag}
+        </span>
+      ))}
+    </div>
+  );
+
+  // Mobile has less width to work with, so cap tags at 2 lines instead of
+  // letting a long list push everything else down. line-clamp needs normal
+  // inline flow (not flex-wrap) to count lines, so this renders as plain
+  // inline spans rather than reusing tagList's flex layout.
+  const mobileTagList = tags.length > 0 && (
+    <p className="text-xs text-base-content/50 line-clamp-2">
+      {tags.map((tag) => (
+        <span key={tag} className="mr-2">
+          #{tag}
+        </span>
+      ))}
+    </p>
+  );
+
+  const waveform = (
+    <div className="relative">
+      <Waveform peaks={peaks} progress={duration ? currentTime / duration : 0} onSeek={seek} />
+      <span className="absolute bottom-0.5 left-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
+        {formatDuration(currentTime)}
+      </span>
+      <span className="absolute bottom-0.5 right-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
+        {formatDuration(duration)}
+      </span>
+    </div>
+  );
+
+  const descriptionEl = description && (
+    <p className="text-sm text-base-content/70 whitespace-pre-wrap">{description}</p>
+  );
+
   return (
     <li
       id={slug}
-      className={`grid grid-cols-[auto_1fr] items-stretch gap-4 p-4 rounded-box transition-colors duration-500 ${
-        isPlaying ? "ring-1 ring-zinc-600" : isHashTarget && !hasClickedPlay ? "ring-1 ring-yellow-400" : ""
+      className={`flex flex-col gap-3 p-4 rounded-box transition-colors duration-500 ${
+        isPlaying || isLastPlayed
+          ? "ring-1 ring-zinc-600"
+          : isHashTarget && !hasClickedPlay
+            ? "ring-1 ring-yellow-400"
+            : ""
       } ${hashFlash && !hasClickedPlay ? "bg-yellow-400/20" : "bg-base-200"}`}
     >
-      <div className="relative aspect-square rounded overflow-hidden bg-base-300">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <button
-          type="button"
-          onClick={togglePlay}
-          aria-label={isPlaying ? "Pause" : "Play"}
-          className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/40 transition-colors"
-        >
-          <span className="flex items-center justify-center w-12 h-12 rounded-full bg-base-100/90 text-base-content">
-            {isPlaying ? (
-              isBuffering ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
-              ) : (
-                <Pause className="w-6 h-6" fill="currentColor" />
-              )
-            ) : (
-              <Play className="w-6 h-6 translate-x-0.5" fill="currentColor" />
-            )}
-          </span>
-        </button>
+      {/* Mobile: artwork with tags/meta beside it, then title, waveform, and
+          description stacked full-width below. */}
+      <div className="flex flex-col gap-3 sm:hidden">
+        <div className="flex gap-4">
+          {artwork}
+          <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+            {mobileTagList}
+            {meta}
+          </div>
+        </div>
+        <h3 className="font-semibold truncate">{title}</h3>
+        {waveform}
+        {descriptionEl}
       </div>
 
-      <div className="min-w-0">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="font-semibold truncate">{title}</h3>
-          <div className="flex items-center gap-1 shrink-0">
-            {slug && <CopyLinkButton slug={slug} />}
-            <span className="text-xs text-base-content/60">{timeLabel}</span>
+      {/* Desktop/tablet: title + meta share a row beside the artwork, tags
+          and waveform below that; description spans full width. */}
+      <div className="hidden sm:flex sm:flex-col sm:gap-3">
+        <div className="grid grid-cols-[auto_1fr] items-stretch gap-4">
+          {artwork}
+          <div className="min-w-0">
+            <div className="flex items-start justify-between gap-x-3 gap-y-1 flex-wrap">
+              <h3 className="font-semibold truncate flex-1 min-w-16">{title}</h3>
+              {meta}
+            </div>
+            <div className="mt-1">{tagList}</div>
+            <div className="mt-3">{waveform}</div>
           </div>
         </div>
-
-        {tags.length > 0 && (
-          <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1">
-            {tags.map((tag) => (
-              <span key={tag} className="text-xs text-base-content/50">
-                #{tag}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <div className="relative mt-3">
-          <Waveform peaks={peaks} progress={duration ? currentTime / duration : 0} onSeek={seek} />
-          <span className="absolute bottom-0.5 left-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
-            {formatDuration(currentTime)}
-          </span>
-          <span className="absolute bottom-0.5 right-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
-            {formatDuration(duration)}
-          </span>
-        </div>
+        {descriptionEl}
       </div>
 
       <audio {...audioProps} />

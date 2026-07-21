@@ -11,6 +11,9 @@ import { useState } from "react";
 export default function Home() {
   const { data: tracks, isLoading, error } = useListTracks();
   const [playingId, setPlayingId] = useState<string | null>(null);
+  // Doesn't get cleared on pause like playingId does, so the last track
+  // played stays visually marked until a different one takes over.
+  const [lastPlayedId, setLastPlayedId] = useState<string | null>(null);
 
   return (
     <div className="bg-base-100 text-base-content min-h-[calc(100vh-4rem)]">
@@ -58,6 +61,7 @@ export default function Home() {
               <TrackListItem
                 key={track.id}
                 title={track.title}
+                description={track.description}
                 tags={track.tags}
                 peaks={parsePeaks(track.waveformPreview)}
                 duration={track.duration}
@@ -65,8 +69,13 @@ export default function Home() {
                 artworkSrc={assetUrl(track.artworkFile)}
                 timeLabel={timeAgo(track.createdAt)}
                 slug={track.slug}
+                links={track.links}
                 isPlaying={playingId === track.id}
-                onPlay={() => setPlayingId(track.id)}
+                isLastPlayed={lastPlayedId === track.id}
+                onPlay={() => {
+                  setPlayingId(track.id);
+                  setLastPlayedId(track.id);
+                }}
                 onPause={() => setPlayingId((current) => (current === track.id ? null : current))}
               />
             ))}
