@@ -1,4 +1,5 @@
-import { SiInstagram, SiSoundcloud } from "@icons-pack/react-simple-icons";
+import { SiInstagram, SiSoundcloud, SiYoutube } from "@icons-pack/react-simple-icons";
+import type { TrackLinkKey } from "@/lib/trackLinks";
 import type { ComponentType } from "react";
 
 export const APP_TITLE = "Pathetic's Vault";
@@ -34,3 +35,16 @@ export const SOCIAL_MEDIA: SocialMediaLink[] = [
     icon: SiInstagram,
   },
 ];
+
+// Icon + display label for each per-track link (see TRACK_LINK_KEYS in
+// @/lib/trackLinks). Extending which platforms a track can link to means
+// adding a key there and an entry here.
+export const TRACK_LINK_ICONS: Record<TrackLinkKey, ComponentType<{ className?: string }>> = {
+  soundcloud: SiSoundcloud,
+  youtube: SiYoutube,
+};
+
+export const TRACK_LINK_LABELS: Record<TrackLinkKey, string> = {
+  soundcloud: "SoundCloud",
+  youtube: "YouTube",
+};

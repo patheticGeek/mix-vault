@@ -2,12 +2,14 @@
 
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { TrackListItem } from "@/components/TrackListItem";
+import { TRACK_LINK_LABELS } from "@/config";
 import { useCreateTrack } from "@/hooks/mutations/useCreateTrack";
 import { useDeleteTrack } from "@/hooks/mutations/useDeleteTrack";
 import { useUpdateTrack } from "@/hooks/mutations/useUpdateTrack";
 import type { TrackResponse } from "@/hooks/queries/useTrack";
 import { assetUrl } from "@/lib/cdn";
 import { timeAgo } from "@/lib/time";
+import { TRACK_LINK_KEYS, type TrackLinkKey } from "@/lib/trackLinks";
 import { extractWaveformPeaks, parsePeaks, type WaveformAnalysis } from "@/lib/waveform";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -49,6 +51,7 @@ interface TrackFormValues {
   description: string;
   tags: string;
   recordedAt: string;
+  links: Record<TrackLinkKey, string>;
 }
 
 export function TrackForm({ track }: { track?: TrackResponse }) {
@@ -66,6 +69,13 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
       description: track?.description ?? "",
       tags: track?.tags.join(", ") ?? "",
       recordedAt: track?.recordedAt ? toDateInputValue(track.recordedAt) : "",
+      links: TRACK_LINK_KEYS.reduce(
+        (acc, key) => {
+          acc[key] = track?.links[key] ?? "";
+          return acc;
+        },
+        {} as Record<TrackLinkKey, string>,
+      ),
     },
   });
 
@@ -99,6 +109,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
         .map((tag) => tag.trim())
         .filter(Boolean)
     : [];
+  const linksValue = watch("links");
 
   useEffect(() => {
     if (!slugTouched) setValue("slug", slugify(titleValue));
@@ -140,6 +151,15 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
     }
   }
 
+  function serializeLinks(links: Record<TrackLinkKey, string>): string {
+    const trimmed: Partial<Record<TrackLinkKey, string>> = {};
+    for (const key of TRACK_LINK_KEYS) {
+      const value = links[key]?.trim();
+      if (value) trimmed[key] = value;
+    }
+    return JSON.stringify(trimmed);
+  }
+
   async function onSubmit(values: TrackFormValues) {
     if (isEditMode && track) {
       try {
@@ -149,6 +169,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           tags: values.tags,
           slug: values.slug,
           recordedAt: values.recordedAt,
+          links: serializeLinks(values.links),
           artworkFile: artworkFile ?? undefined,
         });
         router.push("/admin");
@@ -168,6 +189,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
         tags: values.tags,
         slug: values.slug,
         recordedAt: values.recordedAt,
+        links: serializeLinks(values.links),
         audioFile,
         artworkFile,
         waveformPreview: JSON.stringify(waveformAnalysis.peaks),
@@ -241,6 +263,24 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           className="input input-bordered w-full"
           {...register("tags")}
         />
+      </div>
+
+      <div className="form-control">
+        <label className="label">
+          <span className="label-text">Links</span>
+        </label>
+        <div className="space-y-2">
+          {TRACK_LINK_KEYS.map((key) => (
+            <input
+              key={key}
+              type="url"
+              placeholder={`${TRACK_LINK_LABELS[key]} link`}
+              aria-label={`${TRACK_LINK_LABELS[key]} link`}
+              className="input input-bordered w-full"
+              {...register(`links.${key}`)}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="form-control">
@@ -349,6 +389,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
               duration={previewDuration}
               audioSrc={audioSrc}
               artworkSrc={artworkSrc}
+              links={linksValue}
               timeLabel={track ? timeAgo(track.createdAt) : "Just now"}
               slug={track?.slug}
               isPlaying={isPreviewPlaying}

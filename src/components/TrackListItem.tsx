@@ -2,8 +2,10 @@
 
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { Waveform } from "@/components/Waveform";
+import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
 import { useAudio } from "@/hooks/useAudio";
 import { formatDuration } from "@/lib/time";
+import { TRACK_LINK_KEYS, type TrackLinks } from "@/lib/trackLinks";
 import { Loader2, Pause, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -52,6 +54,7 @@ interface TrackListItemProps {
   artworkSrc: string;
   timeLabel: string;
   slug?: string;
+  links?: TrackLinks;
   isPlaying: boolean;
   onPlay: () => void;
   onPause: () => void;
@@ -69,6 +72,7 @@ export function TrackListItem({
   artworkSrc,
   timeLabel,
   slug,
+  links,
   isPlaying,
   onPlay,
   onPause,
@@ -136,6 +140,27 @@ export function TrackListItem({
                 #{tag}
               </span>
             ))}
+          </div>
+        )}
+
+        {links && TRACK_LINK_KEYS.some((key) => links[key]) && (
+          <div className="flex items-center gap-2 mt-1.5">
+            {TRACK_LINK_KEYS.filter((key) => links[key]).map((key) => {
+              const Icon = TRACK_LINK_ICONS[key];
+              return (
+                <a
+                  key={key}
+                  href={links[key]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={TRACK_LINK_LABELS[key]}
+                  title={TRACK_LINK_LABELS[key]}
+                  className="text-base-content/50 hover:text-base-content transition-colors"
+                >
+                  <Icon className="w-4 h-4" />
+                </a>
+              );
+            })}
           </div>
         )}
 

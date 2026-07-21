@@ -3,6 +3,7 @@ import { sha256Hex } from "@/lib/contentHash";
 import { getDb, tracks } from "@/lib/db";
 import { normalizeTrackRow } from "@/lib/db/schema";
 import { ensureUniqueSlug } from "@/lib/slug";
+import { parseTrackLinks } from "@/lib/trackLinks";
 import { trackAssetKey } from "@/lib/trackAssetKey";
 import { zValidator } from "@hono/zod-validator";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
@@ -22,6 +23,7 @@ const createTrackSchema = z
     description: z.string({ error: "Description is required" }).min(1, "Description is required"),
     tags: z.string().optional(),
     slug: z.string().optional(),
+    links: z.string().optional(),
     audioFileKey: z.string({ error: "Audio file is required" }).min(1, "Audio file is required"),
     artworkFile: z
       .instanceof(File, { message: "Artwork file is required" })
@@ -46,6 +48,7 @@ const updateTrackSchema = z.object({
   description: z.string({ error: "Description is required" }).min(1, "Description is required"),
   tags: z.string().optional(),
   slug: z.string().optional(),
+  links: z.string().optional(),
   artworkFile: z
     .instanceof(File, { message: "Invalid artwork file" })
     .refine((file) => file.size > 0, "Artwork file must not be empty")
@@ -84,6 +87,7 @@ export const tracksRouter = new Hono()
         description,
         tags: tagsInput,
         slug: slugInput,
+        links: linksInput,
         audioFileKey,
         artworkFile,
         waveformPreview,
@@ -105,6 +109,7 @@ export const tracksRouter = new Hono()
         : [];
 
       const slug = await ensureUniqueSlug(slugInput?.trim() ? slugInput : title);
+      const links = parseTrackLinks(linksInput);
 
       const id = trackId;
       const artworkBuffer = await artworkFile.arrayBuffer();
@@ -129,6 +134,7 @@ export const tracksRouter = new Hono()
           duration,
           recordedAt,
           slug,
+          links: JSON.stringify(links),
         })
         .returning();
 
@@ -145,7 +151,15 @@ export const tracksRouter = new Hono()
     }),
     async (c) => {
       const id = c.req.param("id");
-      const { title, description, tags: tagsInput, slug: slugInput, artworkFile, recordedAt } = c.req.valid("form");
+      const {
+        title,
+        description,
+        tags: tagsInput,
+        slug: slugInput,
+        links: linksInput,
+        artworkFile,
+        recordedAt,
+      } = c.req.valid("form");
 
       const db = getDb();
       const [existing] = await db.select().from(tracks).where(eq(tracks.id, id)).limit(1);
@@ -162,6 +176,7 @@ export const tracksRouter = new Hono()
         slugInput?.trim() && slugInput.trim() !== existing.slug
           ? await ensureUniqueSlug(slugInput, id)
           : existing.slug;
+      const links = parseTrackLinks(linksInput);
 
       let artworkFileKey = existing.artworkFile;
       if (artworkFile) {
@@ -187,6 +202,7 @@ export const tracksRouter = new Hono()
           slug,
           artworkFile: artworkFileKey,
           recordedAt,
+          links: JSON.stringify(links),
         })
         .where(eq(tracks.id, id))
         .returning();

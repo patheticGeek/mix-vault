@@ -1,3 +1,4 @@
+import { parseTrackLinks } from "@/lib/trackLinks";
 import { sql } from "drizzle-orm";
 import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
@@ -12,6 +13,7 @@ export const trackSchema = z.object({
   waveformPreview: z.string(),
   duration: z.number(),
   slug: z.string(),
+  links: z.record(z.string(), z.string()),
   recordedAt: z.date().nullable(),
   createdAt: z.date(),
 });
@@ -30,6 +32,7 @@ export function normalizeTrackRow(raw: unknown): Track {
         : Array.isArray(tagsValue)
           ? tagsValue
           : [],
+    links: parseTrackLinks(row.links),
     createdAt:
       row.createdAt instanceof Date
         ? row.createdAt
@@ -61,6 +64,7 @@ export const tracks = sqliteTable(
     waveformPreview: text("waveform_preview").notNull(),
     duration: real("duration").notNull(),
     slug: text("slug").notNull().unique(),
+    links: text("links").notNull().default("{}"),
     recordedAt: integer("recorded_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast((julianday('now') - 2440587.5)*86400000 as integer))`)
