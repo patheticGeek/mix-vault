@@ -4,6 +4,7 @@ import { usePlayer } from "@/components/PlayerProvider";
 import { formatDuration } from "@/lib/time";
 import { Loader2, Pause, Play } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 // How long the fly in/out transition takes, kept in sync with the

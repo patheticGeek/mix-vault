@@ -25,6 +25,10 @@ interface PlayerContextValue {
   toggle: (track: PlayerTrack) => void;
   seek: (fraction: number) => void;
   setVisible: (id: string, visible: boolean) => void;
+  // Fully drops the current track rather than just pausing it, so nothing
+  // is left for the mini player to pick up — for ephemeral playback (like a
+  // track form's live preview) that shouldn't survive its page.
+  discard: (id: string) => void;
 }
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -110,6 +114,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const discard = useCallback((id: string) => {
+    if (currentTrackRef.current?.id !== id) return;
+    setCurrentTrack(null);
+    setIsPlaying(false);
+    setCurrentTime(0);
+  }, []);
+
   const value = useMemo<PlayerContextValue>(
     () => ({
       currentTrack,
@@ -122,8 +133,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       toggle,
       seek,
       setVisible,
+      discard,
     }),
-    [currentTrack, isPlaying, currentTime, isBuffering, isCurrentVisible, play, pause, toggle, seek, setVisible],
+    [currentTrack, isPlaying, currentTime, isBuffering, isCurrentVisible, play, pause, toggle, seek, setVisible, discard],
   );
 
   return (
