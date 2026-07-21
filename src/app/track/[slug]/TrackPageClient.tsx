@@ -89,8 +89,8 @@ export function TrackPageClient({ slug }: { slug: string }) {
   );
 
   const linksRow = track && (
-    <div className="flex items-center gap-2">
-      <CopyLinkButton slug={track.slug} />
+    <div className="flex flex-col items-start gap-1">
+      <CopyLinkButton slug={track.slug} showLabel />
       {TRACK_LINK_KEYS.filter((key) => track.links[key]).map((key) => {
         const Icon = TRACK_LINK_ICONS[key];
         return (
@@ -99,11 +99,10 @@ export function TrackPageClient({ slug }: { slug: string }) {
             href={track.links[key]}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={TRACK_LINK_LABELS[key]}
-            title={TRACK_LINK_LABELS[key]}
-            className="btn btn-ghost btn-sm"
+            className="btn btn-ghost btn-xs gap-1"
           >
             <Icon className="w-4 h-4" />
+            {TRACK_LINK_LABELS[key]}
           </a>
         );
       })}
