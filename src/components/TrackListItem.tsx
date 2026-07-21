@@ -158,6 +158,20 @@ export function TrackListItem({
     </div>
   );
 
+  // Mobile has less width to work with, so cap tags at 2 lines instead of
+  // letting a long list push everything else down. line-clamp needs normal
+  // inline flow (not flex-wrap) to count lines, so this renders as plain
+  // inline spans rather than reusing tagList's flex layout.
+  const mobileTagList = tags.length > 0 && (
+    <p className="text-xs text-base-content/50 line-clamp-2">
+      {tags.map((tag) => (
+        <span key={tag} className="mr-2">
+          #{tag}
+        </span>
+      ))}
+    </p>
+  );
+
   const waveform = (
     <div className="relative">
       <Waveform peaks={peaks} progress={duration ? currentTime / duration : 0} onSeek={seek} />
@@ -187,7 +201,7 @@ export function TrackListItem({
         <div className="flex gap-4">
           {artwork}
           <div className="min-w-0 flex-1 flex flex-col gap-1.5">
-            {tagList}
+            {mobileTagList}
             {meta}
           </div>
         </div>
