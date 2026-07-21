@@ -2,7 +2,7 @@
 
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { TrackListItem } from "@/components/TrackListItem";
-import { TRACK_LINK_LABELS } from "@/config";
+import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
 import { useCreateTrack } from "@/hooks/mutations/useCreateTrack";
 import { useDeleteTrack } from "@/hooks/mutations/useDeleteTrack";
 import { useUpdateTrack } from "@/hooks/mutations/useUpdateTrack";
@@ -272,16 +272,21 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           <span className="label-text">Links</span>
         </label>
         <div className="space-y-2">
-          {TRACK_LINK_KEYS.map((key) => (
-            <input
-              key={key}
-              type="url"
-              placeholder={`${TRACK_LINK_LABELS[key]} link`}
-              aria-label={`${TRACK_LINK_LABELS[key]} link`}
-              className="input input-bordered w-full"
-              {...register(`links.${key}`)}
-            />
-          ))}
+          {TRACK_LINK_KEYS.map((key) => {
+            const Icon = TRACK_LINK_ICONS[key];
+            return (
+              <label key={key} className="input input-bordered flex items-center gap-2 w-full">
+                <Icon className="w-4 h-4 opacity-60 shrink-0" />
+                <input
+                  type="url"
+                  placeholder={`${TRACK_LINK_LABELS[key]} link`}
+                  aria-label={`${TRACK_LINK_LABELS[key]} link`}
+                  className="grow"
+                  {...register(`links.${key}`)}
+                />
+              </label>
+            );
+          })}
         </div>
       </div>
 
