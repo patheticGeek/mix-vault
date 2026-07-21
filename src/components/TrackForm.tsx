@@ -1,6 +1,7 @@
 "use client";
 
 import { CopyLinkButton } from "@/components/CopyLinkButton";
+import { usePlayer } from "@/components/PlayerProvider";
 import { TrackListItem } from "@/components/TrackListItem";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
 import { useCreateTrack } from "@/hooks/mutations/useCreateTrack";
@@ -98,10 +99,18 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
     [track],
   );
 
-  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
-  const [hasPreviewPlayed, setHasPreviewPlayed] = useState(false);
   const previewPeaks = waveformAnalysis?.peaks ?? existingWaveformPeaks ?? [];
   const previewDuration = waveformAnalysis?.duration ?? track?.duration ?? 0;
+  // Falls back to a synthetic id when creating a new track (nothing saved
+  // yet to key playback state on) so the preview can still use the shared
+  // player; when editing, reusing the real id lets it pick up right where
+  // the homepage's own player left off if this track was already playing.
+  const previewId = track?.id ?? "__preview__";
+  const { currentTrack } = usePlayer();
+  const [previewLastPlayedId, setPreviewLastPlayedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (currentTrack) setPreviewLastPlayedId(currentTrack.id);
+  }, [currentTrack]);
 
   const titleValue = watch("title");
   const descriptionValue = watch("description");
@@ -400,6 +409,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           </label>
           <ul>
             <TrackListItem
+              id={previewId}
               title={titleValue || "Untitled"}
               description={descriptionValue}
               tags={previewTags}
@@ -410,13 +420,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
               links={linksValue}
               timeLabel={track ? timeAgo(track.createdAt) : "Just now"}
               slug={track?.slug}
-              isPlaying={isPreviewPlaying}
-              isLastPlayed={hasPreviewPlayed}
-              onPlay={() => {
-                setIsPreviewPlaying(true);
-                setHasPreviewPlayed(true);
-              }}
-              onPause={() => setIsPreviewPlaying(false)}
+              isLastPlayed={previewLastPlayedId === previewId}
             />
           </ul>
         </div>

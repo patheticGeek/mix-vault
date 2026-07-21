@@ -1,17 +1,18 @@
 "use client";
 
 import { CopyLinkButton } from "@/components/CopyLinkButton";
+import { usePlayer } from "@/components/PlayerProvider";
 import { Waveform } from "@/components/Waveform";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
 import { useTrackBySlug, type TrackBySlugResponse } from "@/hooks/queries/useTrackBySlug";
-import { useAudio } from "@/hooks/useAudio";
+import { useTrackVisibility } from "@/hooks/useTrackVisibility";
 import { assetUrl } from "@/lib/cdn";
 import { formatDuration, timeAgo } from "@/lib/time";
 import { TRACK_LINK_KEYS } from "@/lib/trackLinks";
 import { parsePeaks } from "@/lib/waveform";
 import { ArrowLeft, Loader2, Pause, Play } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef } from "react";
 
 interface TrackPageClientProps {
   slug: string;
@@ -20,15 +21,27 @@ interface TrackPageClientProps {
 
 export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
   const { data: track, isLoading, error } = useTrackBySlug(slug, initialTrack);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const { currentTrack, isPlaying: playerIsPlaying, currentTime: playerCurrentTime, isBuffering: playerIsBuffering, toggle, seek } = usePlayer();
 
-  const { audioProps, currentTime, isBuffering, seek } = useAudio({
-    src: track ? assetUrl(track.audioFile) : "",
-    duration: track?.duration ?? 0,
-    isPlaying,
-    onPlay: () => setIsPlaying(true),
-    onPause: () => setIsPlaying(false),
-  });
+  const isCurrent = Boolean(track) && currentTrack?.id === track?.id;
+  const isPlaying = isCurrent && playerIsPlaying;
+  const currentTime = isCurrent ? playerCurrentTime : 0;
+  const isBuffering = isCurrent && playerIsBuffering;
+
+  const mainRef = useRef<HTMLElement>(null);
+  useTrackVisibility(track?.id, mainRef);
+
+  function togglePlay() {
+    if (!track) return;
+    toggle({
+      id: track.id,
+      slug: track.slug,
+      title: track.title,
+      audioSrc: assetUrl(track.audioFile),
+      artworkSrc: assetUrl(track.artworkFile),
+      duration: track.duration,
+    });
+  }
 
   const artwork = track && (
     <div className="relative w-48 h-48 sm:w-56 sm:h-56 shrink-0 rounded-box overflow-hidden bg-base-300 shadow-lg">
@@ -36,7 +49,7 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
       <img src={assetUrl(track.artworkFile)} alt="" className="absolute inset-0 w-full h-full object-cover" />
       <button
         type="button"
-        onClick={() => setIsPlaying((current) => !current)}
+        onClick={togglePlay}
         aria-label={isPlaying ? "Pause" : "Play"}
         className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/40 transition-colors"
       >
@@ -78,7 +91,7 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
       <Waveform
         peaks={parsePeaks(track.waveformPreview)}
         progress={track.duration ? currentTime / track.duration : 0}
-        onSeek={seek}
+        onSeek={isCurrent ? seek : undefined}
       />
       <span className="absolute bottom-0.5 left-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
         {formatDuration(currentTime)}
@@ -116,7 +129,7 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
 
   return (
     <div className="bg-base-100 text-base-content min-h-[calc(100vh-4rem)]">
-      <main className="max-w-3xl mx-auto px-4 py-10">
+      <main ref={mainRef} className="max-w-3xl mx-auto px-4 py-10">
         <Link href="/" className="btn btn-ghost btn-sm gap-1 mb-8">
           <ArrowLeft className="w-4 h-4" />
           Back to all tracks
@@ -171,8 +184,6 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
               {descriptionEl}
               {linksRow}
             </div>
-
-            <audio {...audioProps} />
           </>
         )}
       </main>

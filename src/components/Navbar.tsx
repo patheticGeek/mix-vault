@@ -1,13 +1,14 @@
 import { AuthStatus } from "@/components/AuthStatus";
 import { APP_TITLE } from "@/config";
+import Link from "next/link";
 
 export function Navbar() {
   return (
     <header className="navbar">
       <div className="navbar-start">
-        <a href="/" className="btn btn-ghost normal-case">
+        <Link href="/" className="btn btn-ghost normal-case">
           {APP_TITLE}
-        </a>
+        </Link>
       </div>
       <div className="navbar-end">
         <AuthStatus />

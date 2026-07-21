@@ -15,7 +15,7 @@ export function CopyLinkButton({ slug, className = "", showLabel = false }: Copy
   async function handleCopy(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    const url = `${window.location.origin}/#${slug}`;
+    const url = `${window.location.origin}/track/${slug}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
