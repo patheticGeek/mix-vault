@@ -1,13 +1,15 @@
 "use client";
 
 import { CopyLinkButton } from "@/components/CopyLinkButton";
+import { usePlayer } from "@/components/PlayerProvider";
 import { Waveform } from "@/components/Waveform";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
-import { useAudio } from "@/hooks/useAudio";
+import { useTrackVisibility } from "@/hooks/useTrackVisibility";
 import { formatDuration } from "@/lib/time";
 import { TRACK_LINK_KEYS, type TrackLinks } from "@/lib/trackLinks";
 import { Loader2, Pause, Play } from "lucide-react";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 // Tracks whether the page's #hash currently points at this slug, so a
 // shared link (see CopyLinkButton) can highlight the track it targets.
@@ -46,6 +48,7 @@ function useHashFlash(isHashTarget: boolean): boolean {
 }
 
 interface TrackListItemProps {
+  id?: string;
   title: string;
   description?: string;
   tags: string[];
@@ -56,16 +59,16 @@ interface TrackListItemProps {
   timeLabel: string;
   slug?: string;
   links?: TrackLinks;
-  isPlaying: boolean;
   isLastPlayed?: boolean;
-  onPlay: () => void;
-  onPause: () => void;
 }
 
 // Presentational only — deliberately takes resolved values (urls, parsed
 // peaks, a pre-formatted time label) rather than a raw track record, so the
 // same component can render either a saved track or a live form preview.
+// `id` is optional because a live form preview has no saved track to key
+// playback state on — it just won't participate in the shared player.
 export function TrackListItem({
+  id,
   title,
   description,
   tags,
@@ -76,26 +79,25 @@ export function TrackListItem({
   timeLabel,
   slug,
   links,
-  isPlaying,
   isLastPlayed = false,
-  onPlay,
-  onPause,
 }: TrackListItemProps) {
-  const { audioProps, currentTime, isBuffering, seek } = useAudio({
-    src: audioSrc,
-    duration,
-    isPlaying,
-    onPlay,
-    onPause,
-  });
+  const { currentTrack, isPlaying: playerIsPlaying, currentTime: playerCurrentTime, isBuffering: playerIsBuffering, toggle, seek } = usePlayer();
+  const isCurrent = id !== undefined && currentTrack?.id === id;
+  const isPlaying = isCurrent && playerIsPlaying;
+  const currentTime = isCurrent ? playerCurrentTime : 0;
+  const isBuffering = isCurrent && playerIsBuffering;
+
+  const itemRef = useRef<HTMLLIElement>(null);
+  useTrackVisibility(id, itemRef);
+
   const isHashTarget = useIsHashTarget(slug);
   const hashFlash = useHashFlash(isHashTarget);
   const [hasClickedPlay, setHasClickedPlay] = useState(false);
 
   function togglePlay() {
     setHasClickedPlay(true);
-    if (isPlaying) onPause();
-    else onPlay();
+    if (id === undefined) return;
+    toggle({ id, slug, title, audioSrc, artworkSrc, duration });
   }
 
   const artwork = (
@@ -123,8 +125,8 @@ export function TrackListItem({
     </div>
   );
 
-  const meta = (
-    <div className="flex items-center gap-2 shrink-0">
+  const linksButtons = (
+    <div className="flex items-center">
       {links && TRACK_LINK_KEYS.some((key) => links[key]) && (
         <div className="flex items-center">
           {TRACK_LINK_KEYS.filter((key) => links[key]).map((key) => {
@@ -146,6 +148,12 @@ export function TrackListItem({
         </div>
       )}
       {slug && <CopyLinkButton slug={slug} />}
+    </div>
+  );
+
+  const meta = (
+    <div className="flex items-center gap-2 shrink-0">
+      {linksButtons}
       <span className="text-xs text-base-content/60">{timeLabel}</span>
     </div>
   );
@@ -176,7 +184,7 @@ export function TrackListItem({
 
   const waveform = (
     <div className="relative">
-      <Waveform peaks={peaks} progress={duration ? currentTime / duration : 0} onSeek={seek} />
+      <Waveform peaks={peaks} progress={duration ? currentTime / duration : 0} onSeek={isCurrent ? seek : undefined} />
       <span className="absolute bottom-0.5 left-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
         {formatDuration(currentTime)}
       </span>
@@ -190,8 +198,24 @@ export function TrackListItem({
     <p className="text-sm text-base-content/70 whitespace-pre-wrap">{description}</p>
   );
 
+  // Links to the track's own page when it has a slug (i.e. it's a saved
+  // track, not a live form preview). `contents` keeps the anchor from
+  // affecting the surrounding flex layout — the h3 underneath still is the
+  // actual flex item.
+  function titleEl(className: string) {
+    const heading = <h3 className={className}>{title}</h3>;
+    return slug ? (
+      <Link href={`/track/${slug}`} className="contents">
+        {heading}
+      </Link>
+    ) : (
+      heading
+    );
+  }
+
   return (
     <li
+      ref={itemRef}
       id={slug}
       className={`flex flex-col gap-3 p-4 rounded-box transition-colors duration-500 ${
         isPlaying || isLastPlayed
@@ -201,17 +225,19 @@ export function TrackListItem({
             : ""
       } ${hashFlash && !hasClickedPlay ? "bg-yellow-400/20" : "bg-base-200"}`}
     >
-      {/* Mobile: artwork with tags/meta beside it, then title, waveform, and
-          description stacked full-width below. */}
+      {/* Mobile: artwork with share/link buttons beside it (uploaded time
+          below them), then title, tags, waveform, and description stacked
+          full-width below. */}
       <div className="flex flex-col gap-3 sm:hidden">
         <div className="flex gap-4">
           {artwork}
-          <div className="min-w-0 flex-1 flex flex-col gap-1.5">
-            {mobileTagList}
-            {meta}
+          <div className="min-w-0 flex-1 flex flex-col items-end gap-1.5">
+            {linksButtons}
+            <span className="text-xs text-base-content/60">{timeLabel}</span>
           </div>
         </div>
-        <h3 className="font-semibold truncate">{title}</h3>
+        {titleEl("font-semibold truncate")}
+        {mobileTagList}
         {waveform}
         {descriptionEl}
       </div>
@@ -223,7 +249,7 @@ export function TrackListItem({
           {artwork}
           <div className="min-w-0">
             <div className="flex items-start justify-between gap-x-3 gap-y-1 flex-wrap">
-              <h3 className="font-semibold truncate flex-1 min-w-16">{title}</h3>
+              {titleEl("font-semibold truncate flex-1 min-w-16")}
               {meta}
             </div>
             <div className="mt-1">{tagList}</div>
@@ -232,8 +258,6 @@ export function TrackListItem({
         </div>
         {descriptionEl}
       </div>
-
-      <audio {...audioProps} />
     </li>
   );
 }

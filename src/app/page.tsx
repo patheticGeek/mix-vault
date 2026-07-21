@@ -1,19 +1,23 @@
 "use client";
 
+import { usePlayer } from "@/components/PlayerProvider";
 import { TrackListItem } from "@/components/TrackListItem";
 import { APP_DESC, APP_TITLE, SOCIAL_MEDIA } from "@/config";
 import { useListTracks } from "@/hooks/queries/useListTracks";
 import { assetUrl } from "@/lib/cdn";
 import { timeAgo } from "@/lib/time";
 import { parsePeaks } from "@/lib/waveform";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Home() {
   const { data: tracks, isLoading, error } = useListTracks();
-  const [playingId, setPlayingId] = useState<string | null>(null);
-  // Doesn't get cleared on pause like playingId does, so the last track
+  const { currentTrack } = usePlayer();
+  // Doesn't get cleared on pause like isPlaying does, so the last track
   // played stays visually marked until a different one takes over.
   const [lastPlayedId, setLastPlayedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (currentTrack) setLastPlayedId(currentTrack.id);
+  }, [currentTrack]);
 
   return (
     <div className="bg-base-100 text-base-content min-h-[calc(100vh-4rem)]">
@@ -60,8 +64,8 @@ export default function Home() {
             {tracks.map((track) => (
               <TrackListItem
                 key={track.id}
+                id={track.id}
                 title={track.title}
-                description={track.description}
                 tags={track.tags}
                 peaks={parsePeaks(track.waveformPreview)}
                 duration={track.duration}
@@ -70,13 +74,7 @@ export default function Home() {
                 timeLabel={timeAgo(track.createdAt)}
                 slug={track.slug}
                 links={track.links}
-                isPlaying={playingId === track.id}
                 isLastPlayed={lastPlayedId === track.id}
-                onPlay={() => {
-                  setPlayingId(track.id);
-                  setLastPlayedId(track.id);
-                }}
-                onPause={() => setPlayingId((current) => (current === track.id ? null : current))}
               />
             ))}
           </ul>

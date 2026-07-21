@@ -1,20 +1,28 @@
 "use client";
 
 import { CopyLinkButton } from "@/components/CopyLinkButton";
-import { TrackListItem } from "@/components/TrackListItem";
+import { usePlayer } from "@/components/PlayerProvider";
+import { Waveform } from "@/components/Waveform";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
 import { useCreateTrack } from "@/hooks/mutations/useCreateTrack";
 import { useDeleteTrack } from "@/hooks/mutations/useDeleteTrack";
+import { useTrackVisibility } from "@/hooks/useTrackVisibility";
 import { useUpdateTrack } from "@/hooks/mutations/useUpdateTrack";
 import type { TrackResponse } from "@/hooks/queries/useTrack";
 import { extractAudioMetadata } from "@/lib/audioMetadata";
 import { assetUrl } from "@/lib/cdn";
-import { timeAgo } from "@/lib/time";
+import { formatDuration } from "@/lib/time";
 import { TRACK_LINK_KEYS, type TrackLinkKey } from "@/lib/trackLinks";
 import { extractWaveformPeaks, parsePeaks, type WaveformAnalysis } from "@/lib/waveform";
+import { Loader2, Pause, Play } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+
+// A static placeholder shape for the waveform slot before any audio is
+// uploaded — deterministic (no Math.random/Date.now) so it renders the same
+// on the server and client.
+const DEMO_WAVEFORM_PEAKS = Array.from({ length: 40 }, (_, i) => 0.3 + 0.7 * Math.abs(Math.sin(i * 0.5)));
 
 function slugify(input: string): string {
   return input
@@ -83,6 +91,8 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   const [slugTouched, setSlugTouched] = useState(isEditMode);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [artworkFile, setArtworkFile] = useState<File | null>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
+  const artworkInputRef = useRef<HTMLInputElement>(null);
   const [waveformAnalysis, setWaveformAnalysis] = useState<WaveformAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
@@ -98,25 +108,58 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
     [track],
   );
 
-  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
-  const [hasPreviewPlayed, setHasPreviewPlayed] = useState(false);
   const previewPeaks = waveformAnalysis?.peaks ?? existingWaveformPeaks ?? [];
   const previewDuration = waveformAnalysis?.duration ?? track?.duration ?? 0;
+  const hasAudioPreview = previewPeaks.length > 0 && Boolean(audioSrc);
+  // Falls back to a synthetic id when creating a new track (nothing saved
+  // yet to key playback state on) so the preview can still use the shared
+  // player; when editing, reusing the real id lets it pick up right where
+  // the homepage's own player left off if this track was already playing.
+  const previewId = track?.id ?? "__preview__";
+  const {
+    currentTrack,
+    isPlaying: playerIsPlaying,
+    currentTime: playerCurrentTime,
+    isBuffering: playerIsBuffering,
+    toggle,
+    seek,
+    discard,
+  } = usePlayer();
+  const isCurrent = currentTrack?.id === previewId;
+  const isPlaying = isCurrent && playerIsPlaying;
+  const currentTime = isCurrent ? playerCurrentTime : 0;
+  const isBuffering = isCurrent && playerIsBuffering;
+
+  const previewVisibilityRef = useRef<HTMLDivElement>(null);
+  useTrackVisibility(hasAudioPreview ? previewId : undefined, previewVisibilityRef);
+
+  // The synthetic preview-only track (an unsaved track has no real id to
+  // hand off to the homepage/mini player) shouldn't outlive this page — the
+  // mini player exists for saved tracks, not a form's scratch playback. A
+  // track already being edited keeps its real id, so it's left alone and
+  // can keep playing in the mini player like any other saved track.
+  useEffect(() => {
+    if (isEditMode) return;
+    return () => discard(previewId);
+  }, [isEditMode, previewId, discard]);
 
   const titleValue = watch("title");
-  const descriptionValue = watch("description");
-  const tagsValue = watch("tags");
-  const previewTags = tagsValue
-    ? tagsValue
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean)
-    : [];
-  const linksValue = watch("links");
 
   useEffect(() => {
     if (!slugTouched) setValue("slug", slugify(titleValue));
   }, [titleValue, slugTouched, setValue]);
+
+  function togglePreviewPlay() {
+    if (!audioSrc || !artworkSrc) return;
+    toggle({
+      id: previewId,
+      slug: track?.slug,
+      title: titleValue || "Untitled",
+      audioSrc,
+      artworkSrc,
+      duration: previewDuration,
+    });
+  }
 
   const slugField = register("slug", { required: true });
 
@@ -128,8 +171,8 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
 
     const metadata = await extractAudioMetadata(file);
 
-    if (!getValues("title").trim() && metadata.title) {
-      setValue("title", metadata.title);
+    if (!getValues("title").trim()) {
+      setValue("title", file.name.replace(/\.[^./]+$/, ""));
     }
 
     // Prefer a recording date embedded in the file's own tags; file's
@@ -216,6 +259,96 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+      <div ref={previewVisibilityRef} className="flex gap-4">
+        {hasAudioPreview ? (
+          <div className="relative flex-1 min-w-0 h-24 rounded bg-base-300 overflow-hidden flex items-center px-3 gap-3">
+            <button
+              type="button"
+              onClick={togglePreviewPlay}
+              disabled={!artworkSrc}
+              aria-label={isPlaying ? "Pause" : "Play"}
+              className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-base-100/90 text-base-content disabled:opacity-40"
+            >
+              {isPlaying ? (
+                isBuffering ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Pause className="w-5 h-5" fill="currentColor" />
+                )
+              ) : (
+                <Play className="w-5 h-5 translate-x-0.5" fill="currentColor" />
+              )}
+            </button>
+            <div className="relative flex-1 min-w-0">
+              <Waveform
+                peaks={previewPeaks}
+                progress={previewDuration ? currentTime / previewDuration : 0}
+                onSeek={isCurrent ? seek : undefined}
+              />
+              <span className="absolute bottom-0.5 left-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
+                {formatDuration(currentTime)}
+              </span>
+              <span className="absolute bottom-0.5 right-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
+                {formatDuration(previewDuration)}
+              </span>
+            </div>
+          </div>
+        ) : isAnalyzing ? (
+          <div className="relative flex-1 min-w-0 h-24 rounded bg-base-300 overflow-hidden flex items-center justify-center px-3">
+            <div className="absolute inset-0 flex items-end gap-px px-4 py-6 opacity-20">
+              {DEMO_WAVEFORM_PEAKS.map((peak, i) => (
+                <div key={i} className="flex-1 bg-base-content rounded-sm" style={{ height: `${peak * 100}%` }} />
+              ))}
+            </div>
+            <span className="relative flex items-center gap-2 text-sm font-medium text-base-content/60">
+              <span className="loading loading-spinner loading-sm" />
+              Analyzing waveform...
+            </span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => audioInputRef.current?.click()}
+            className="relative flex-1 min-w-0 h-24 rounded bg-base-300 overflow-hidden flex items-center justify-center px-3"
+          >
+            <div className="absolute inset-0 flex items-end gap-px px-4 py-6 opacity-20">
+              {DEMO_WAVEFORM_PEAKS.map((peak, i) => (
+                <div key={i} className="flex-1 bg-base-content rounded-sm" style={{ height: `${peak * 100}%` }} />
+              ))}
+            </div>
+            <span className="relative text-sm font-medium text-base-content/60">Upload audio file</span>
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={() => artworkInputRef.current?.click()}
+          aria-label={isEditMode ? "Update artwork" : "Upload artwork"}
+          className="relative w-24 h-24 shrink-0 rounded overflow-hidden bg-base-300"
+        >
+          {artworkSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <span className="absolute inset-0 flex items-center justify-center text-center text-xs font-medium text-base-content/60 px-2">
+              Upload artwork
+            </span>
+          )}
+        </button>
+      </div>
+
+      <div className="form-control">
+        <label className="label" htmlFor="recordedAt">
+          <span className="label-text">Recorded at</span>
+        </label>
+        <input
+          id="recordedAt"
+          type="date"
+          className="input input-bordered w-full"
+          {...register("recordedAt")}
+        />
+      </div>
+
       <div className="form-control">
         <label className="label" htmlFor="title">
           <span className="label-text">Title</span>
@@ -235,18 +368,21 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           <span className="label-text">Slug</span>
           {isEditMode && track && <CopyLinkButton slug={track.slug} showLabel />}
         </label>
-        <input
-          id="slug"
-          type="text"
-          required
-          placeholder="midnight-drive"
-          className="input input-bordered w-full"
-          {...slugField}
-          onChange={(e) => {
-            setSlugTouched(true);
-            slugField.onChange(e);
-          }}
-        />
+        <label htmlFor="slug" className="input input-bordered flex items-center gap-1 w-full">
+          <span className="text-base-content/50 select-none">/track/</span>
+          <input
+            id="slug"
+            type="text"
+            required
+            placeholder="midnight-drive"
+            className="grow"
+            {...slugField}
+            onChange={(e) => {
+              setSlugTouched(true);
+              slugField.onChange(e);
+            }}
+          />
+        </label>
       </div>
 
       <div className="form-control">
@@ -266,7 +402,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
       <div className="form-control">
         <label className="label" htmlFor="tags">
           <span className="label-text">Tags</span>
-          <span className="label-text-alt">comma separated</span>
+          <span className="label-text-alt text-xs">comma separated</span>
         </label>
         <input
           id="tags"
@@ -300,75 +436,32 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
         </div>
       </div>
 
-      <div className="form-control">
-        <label className="label" htmlFor="recordedAt">
-          <span className="label-text">Recorded at</span>
-        </label>
+      {!isEditMode && (
         <input
-          id="recordedAt"
-          type="date"
-          className="input input-bordered w-full"
-          {...register("recordedAt")}
-        />
-      </div>
-
-      {isEditMode ? (
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text">Track file</span>
-          </label>
-          <p className="text-sm text-base-content/60 mb-2">
-            The audio file can&apos;t be changed after a track is uploaded.
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="form-control">
-            <label className="label" htmlFor="audioFile">
-              <span className="label-text">Track file</span>
-            </label>
-            <input
-              id="audioFile"
-              type="file"
-              accept="audio/*"
-              required
-              onChange={(e) =>
-                handleAudioFileChange(e.target.files?.[0] ?? null)
-              }
-              className="file-input file-input-bordered w-full"
-            />
-          </div>
-
-          {isAnalyzing && (
-            <div className="flex items-center gap-2 text-sm text-base-content/60">
-              <span className="loading loading-spinner loading-sm" />
-              Analyzing waveform...
-            </div>
-          )}
-
-          {analyzeError && (
-            <p className="text-error text-sm" role="alert">
-              {analyzeError}
-            </p>
-          )}
-        </>
-      )}
-
-      <div className="form-control">
-        <label className="label" htmlFor="artworkFile">
-          <span className="label-text">
-            {isEditMode ? "Update artwork" : "Artwork"}
-          </span>
-        </label>
-        <input
-          id="artworkFile"
+          ref={audioInputRef}
+          id="audioFile"
           type="file"
-          accept="image/*"
-          required={!isEditMode}
-          onChange={(e) => setArtworkFile(e.target.files?.[0] ?? null)}
-          className="file-input file-input-bordered w-full"
+          accept="audio/*"
+          required
+          onChange={(e) => handleAudioFileChange(e.target.files?.[0] ?? null)}
+          className="sr-only"
         />
-      </div>
+      )}
+      <input
+        ref={artworkInputRef}
+        id="artworkFile"
+        type="file"
+        accept="image/*"
+        required={!isEditMode}
+        onChange={(e) => setArtworkFile(e.target.files?.[0] ?? null)}
+        className="sr-only"
+      />
+
+      {analyzeError && (
+        <p className="text-error text-sm" role="alert">
+          {analyzeError}
+        </p>
+      )}
 
       {mutation.error && (
         <p className="text-error text-sm" role="alert">
@@ -390,35 +483,6 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
             max={100}
           />
           <p className="text-sm text-base-content/60">{uploadProgress}%</p>
-        </div>
-      )}
-
-      {audioSrc && artworkSrc && previewPeaks.length > 0 && (
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text">Homepage preview</span>
-          </label>
-          <ul>
-            <TrackListItem
-              title={titleValue || "Untitled"}
-              description={descriptionValue}
-              tags={previewTags}
-              peaks={previewPeaks}
-              duration={previewDuration}
-              audioSrc={audioSrc}
-              artworkSrc={artworkSrc}
-              links={linksValue}
-              timeLabel={track ? timeAgo(track.createdAt) : "Just now"}
-              slug={track?.slug}
-              isPlaying={isPreviewPlaying}
-              isLastPlayed={hasPreviewPlayed}
-              onPlay={() => {
-                setIsPreviewPlaying(true);
-                setHasPreviewPlayed(true);
-              }}
-              onPause={() => setIsPreviewPlaying(false)}
-            />
-          </ul>
         </div>
       )}
 
