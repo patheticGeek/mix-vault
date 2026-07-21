@@ -47,6 +47,7 @@ function useHashFlash(isHashTarget: boolean): boolean {
 
 interface TrackListItemProps {
   title: string;
+  description?: string;
   tags: string[];
   peaks: number[];
   duration: number;
@@ -65,6 +66,7 @@ interface TrackListItemProps {
 // same component can render either a saved track or a live form preview.
 export function TrackListItem({
   title,
+  description,
   tags,
   peaks,
   duration,
@@ -143,8 +145,20 @@ export function TrackListItem({
           </div>
         )}
 
+        <div className="relative mt-3">
+          <Waveform peaks={peaks} progress={duration ? currentTime / duration : 0} onSeek={seek} />
+          <span className="absolute bottom-0.5 left-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
+            {formatDuration(currentTime)}
+          </span>
+          <span className="absolute bottom-0.5 right-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
+            {formatDuration(duration)}
+          </span>
+        </div>
+
+        {description && <p className="text-sm text-base-content/70 mt-3 whitespace-pre-wrap">{description}</p>}
+
         {links && TRACK_LINK_KEYS.some((key) => links[key]) && (
-          <div className="flex items-center gap-2 mt-1.5">
+          <div className="flex items-center gap-2 mt-2">
             {TRACK_LINK_KEYS.filter((key) => links[key]).map((key) => {
               const Icon = TRACK_LINK_ICONS[key];
               return (
@@ -163,16 +177,6 @@ export function TrackListItem({
             })}
           </div>
         )}
-
-        <div className="relative mt-3">
-          <Waveform peaks={peaks} progress={duration ? currentTime / duration : 0} onSeek={seek} />
-          <span className="absolute bottom-0.5 left-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
-            {formatDuration(currentTime)}
-          </span>
-          <span className="absolute bottom-0.5 right-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
-            {formatDuration(duration)}
-          </span>
-        </div>
       </div>
 
       <audio {...audioProps} />

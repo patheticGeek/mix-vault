@@ -58,6 +58,7 @@ export default function Home() {
               <TrackListItem
                 key={track.id}
                 title={track.title}
+                description={track.description}
                 tags={track.tags}
                 peaks={parsePeaks(track.waveformPreview)}
                 duration={track.duration}

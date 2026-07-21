@@ -102,6 +102,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   const previewDuration = waveformAnalysis?.duration ?? track?.duration ?? 0;
 
   const titleValue = watch("title");
+  const descriptionValue = watch("description");
   const tagsValue = watch("tags");
   const previewTags = tagsValue
     ? tagsValue
@@ -384,6 +385,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           <ul>
             <TrackListItem
               title={titleValue || "Untitled"}
+              description={descriptionValue}
               tags={previewTags}
               peaks={previewPeaks}
               duration={previewDuration}
