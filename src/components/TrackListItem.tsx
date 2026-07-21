@@ -104,7 +104,7 @@ export function TrackListItem({
       } ${hashFlash && !hasClickedPlay ? "bg-yellow-400/20" : "bg-base-200"}`}
     >
       <div className="grid grid-cols-[auto_1fr] items-stretch gap-4">
-        <div className="relative aspect-square w-24 shrink-0 rounded overflow-hidden bg-base-300">
+        <div className="relative aspect-square w-24 shrink-0 self-start rounded overflow-hidden bg-base-300">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
           <button
