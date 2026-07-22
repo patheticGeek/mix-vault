@@ -124,6 +124,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
     toggle,
     seek,
     discard,
+    removeFromQueue,
   } = usePlayer();
   const isCurrent = currentTrack?.id === previewId;
   const isPlaying = isCurrent && playerIsPlaying;
@@ -200,6 +201,9 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
 
     try {
       await deleteTrack.mutateAsync(track.id);
+      // Drop it from the player too, so the queue/mini player don't keep
+      // pointing at a track that no longer exists.
+      removeFromQueue(track.id);
       router.push("/admin");
     } catch {
       // deleteTrack.error already reflects the failure

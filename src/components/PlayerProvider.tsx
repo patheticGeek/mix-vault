@@ -1,5 +1,6 @@
 "use client";
 
+import { apiClient } from "@/lib/api-client";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 export interface PlayerTrack {
@@ -50,6 +51,9 @@ interface PlayerContextValue {
   playNext: (track: PlayerTrack) => void;
   // Reorder the queue (drag-and-drop): move the entry at `from` to `to`.
   reorderQueue: (from: number, to: number) => void;
+  // Drop a track from the queue by id — used when a track is deleted. If it's
+  // the one currently playing, playback moves on to the next surviving track.
+  removeFromQueue: (id: string) => void;
   // Advance to the next / previous track in the queue (no-op at the ends).
   next: () => void;
   prev: () => void;
@@ -383,6 +387,87 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     [commitQueue],
   );
 
+  // Prune the queue down to the tracks that satisfy `keep`, used when tracks
+  // are deleted (one at a time, or a whole batch found missing on restore). If
+  // the current track is dropped, playback resumes from the nearest surviving
+  // track at or after its old spot — otherwise the nearest one before it, and
+  // if nothing's left, playback stops.
+  const reconcileQueue = useCallback(
+    (keep: (track: PlayerTrack) => boolean) => {
+      const q = queueRef.current;
+      const current = currentTrackRef.current;
+      const currentKept = !current || keep(current);
+      const nextQueue = q.filter(keep);
+      // Nothing was removed and the current track survives — leave everything.
+      if (nextQueue.length === q.length && currentKept) return;
+
+      commitQueue(nextQueue);
+      // Queue shrank but what's playing is fine — don't disturb playback.
+      if (currentKept) return;
+
+      const oldIdx = q.findIndex((t) => t.id === current!.id);
+      let replacement: PlayerTrack | null = null;
+      for (let i = oldIdx; i >= 0 && i < q.length; i++) {
+        if (keep(q[i])) {
+          replacement = q[i];
+          break;
+        }
+      }
+      if (!replacement) {
+        for (let i = oldIdx - 1; i >= 0; i--) {
+          if (keep(q[i])) {
+            replacement = q[i];
+            break;
+          }
+        }
+      }
+
+      // Moving off the deleted track: start the replacement from the top, and
+      // drop any pending restore-seek since it belonged to the old track.
+      pendingSeekRef.current = null;
+      currentTimeRef.current = 0;
+      setCurrentTime(0);
+      if (!replacement) {
+        setCurrentTrack(null);
+        setIsPlaying(false);
+        return;
+      }
+      setCurrentTrack(replacement);
+    },
+    [commitQueue],
+  );
+
+  const removeFromQueue = useCallback(
+    (id: string) => {
+      reconcileQueue((track) => track.id !== id);
+    },
+    [reconcileQueue],
+  );
+
+  // Once the restored session is in place, confirm its tracks still exist on
+  // the server and drop any deleted since we last saved. Runs in the
+  // background so it never delays resuming playback, and leaves the queue
+  // untouched if the server can't be reached (so a blip doesn't wipe it).
+  useEffect(() => {
+    if (!currentTrackRef.current && queueRef.current.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await apiClient.api.tracks.$get();
+        if (!res.ok) return;
+        const rows = await res.json();
+        if (cancelled) return;
+        const validIds = new Set(rows.map((r) => r.id));
+        reconcileQueue((track) => validIds.has(track.id));
+      } catch {
+        // Network/parse error — don't prune on a check we couldn't complete.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [reconcileQueue]);
+
   // Where the current track sits in the queue, and whether there's anywhere
   // to go from here. Derived (not stored) so it can never drift out of sync
   // with what's actually playing.
@@ -415,12 +500,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       addToQueue,
       playNext,
       reorderQueue,
+      removeFromQueue,
       next,
       prev,
       setVisible,
       discard,
     }),
-    [currentTrack, isPlaying, currentTime, isBuffering, volume, isCurrentVisible, queue, queueIndex, hasNext, hasPrev, play, pause, toggle, seek, setVolume, playQueue, playAt, addToQueue, playNext, reorderQueue, next, prev, setVisible, discard],
+    [currentTrack, isPlaying, currentTime, isBuffering, volume, isCurrentVisible, queue, queueIndex, hasNext, hasPrev, play, pause, toggle, seek, setVolume, playQueue, playAt, addToQueue, playNext, reorderQueue, removeFromQueue, next, prev, setVisible, discard],
   );
 
   return (
