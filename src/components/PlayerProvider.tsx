@@ -16,6 +16,10 @@ interface PlayerContextValue {
   isPlaying: boolean;
   currentTime: number;
   isBuffering: boolean;
+  // Playback volume in the 0..1 range, applied to the shared <audio>
+  // element. Exposed so richer players (like the magic skins) can offer a
+  // volume slider; the default inline players just leave it at 1.
+  volume: number;
   // Whether the current track's own inline player (a list item or the track
   // page hero) is on screen somewhere right now — see useTrackVisibility.
   // The mini player only shows itself when this is false.
@@ -24,6 +28,7 @@ interface PlayerContextValue {
   pause: () => void;
   toggle: (track: PlayerTrack) => void;
   seek: (fraction: number) => void;
+  setVolume: (volume: number) => void;
   setVisible: (id: string, visible: boolean) => void;
   // Fully drops the current track rather than just pausing it, so nothing
   // is left for the mini player to pick up — for ephemeral playback (like a
@@ -49,6 +54,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [isBuffering, setIsBuffering] = useState(false);
   const [isCurrentVisible, setIsCurrentVisible] = useState(false);
+  const [volume, setVolumeState] = useState(1);
 
   // Mirror the latest track/playing state into refs so the callbacks below
   // can stay referentially stable (no deps on state) instead of changing
@@ -97,6 +103,20 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setIsPlaying(true);
   }, []);
 
+  // Keep the <audio> element's volume in sync. Clamped so callers can pass
+  // a raw slider value without worrying about going out of range.
+  const setVolume = useCallback((next: number) => {
+    const clamped = Math.min(1, Math.max(0, next));
+    setVolumeState(clamped);
+    if (audioRef.current) audioRef.current.volume = clamped;
+  }, []);
+
+  // Re-apply volume whenever the element (re)mounts or the src swaps, since a
+  // fresh media element resets to 1.
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = volume;
+  }, [volume, currentTrack]);
+
   const seek = useCallback((fraction: number) => {
     const audio = audioRef.current;
     const track = currentTrackRef.current;
@@ -127,15 +147,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       isPlaying,
       currentTime,
       isBuffering,
+      volume,
       isCurrentVisible,
       play,
       pause,
       toggle,
       seek,
+      setVolume,
       setVisible,
       discard,
     }),
-    [currentTrack, isPlaying, currentTime, isBuffering, isCurrentVisible, play, pause, toggle, seek, setVisible, discard],
+    [currentTrack, isPlaying, currentTime, isBuffering, volume, isCurrentVisible, play, pause, toggle, seek, setVolume, setVisible, discard],
   );
 
   return (
