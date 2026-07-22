@@ -30,6 +30,10 @@ interface QueuePanelProps {
 // so we don't have to derive an alpha from each theme's accent color.
 const HOVER_BG = "rgba(128,128,128,0.18)";
 
+// A fixed, vivid blue for the drag drop-line. No skin's palette uses blue, so
+// it reads clearly against every surface (and the accent-filled current row).
+const DROP_LINE = "#3b82f6";
+
 // The queue / playlist, rendered in the active skin's palette rather than a
 // single fixed style, and reorderable by dragging rows. Purely presentational
 // — all mutations go back out through the callbacks.
@@ -48,7 +52,11 @@ export function QueuePanel({
   onPrev,
 }: QueuePanelProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [overIndex, setOverIndex] = useState<number | null>(null);
+  // The insertion point, expressed as a gap between rows: gap `g` means "land
+  // before row g" (and `items.length` means after the last row). Tracking gaps
+  // rather than a hovered row is what makes the very first and very last slots
+  // reachable — a row-only target can't express "before row 0" vs "after it".
+  const [overGap, setOverGap] = useState<number | null>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   // The source index also lives in a ref so onDrop reads the live value even
   // if it fires in the same tick as onDragStart (no re-render in between).
@@ -57,7 +65,14 @@ export function QueuePanel({
   function resetDrag() {
     dragIndexRef.current = null;
     setDragIndex(null);
-    setOverIndex(null);
+    setOverGap(null);
+  }
+
+  // Which gap the pointer is over within row `i`: top half → before it, bottom
+  // half → after it.
+  function gapFor(e: React.DragEvent<HTMLElement>, i: number) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return e.clientY - rect.top > rect.height / 2 ? i + 1 : i;
   }
 
   const transportBtn = "rounded p-1 disabled:opacity-25 transition-opacity";
@@ -101,9 +116,23 @@ export function QueuePanel({
       <ul className="max-h-72 overflow-y-auto">
         {items.map((t, i) => {
           const isCurrent = i === currentIndex;
-          const isDropTarget = overIndex === i && dragIndex !== null && dragIndex !== i;
+          // Only draw the drop line where the item would actually land: the
+          // gaps immediately above and below the dragged row are no-ops.
+          const isRealDrop =
+            dragIndex !== null && overGap !== dragIndex && overGap !== dragIndex + 1;
+          const showTopLine = isRealDrop && overGap === i;
+          const showBottomLine = isRealDrop && overGap === items.length && i === items.length - 1;
           const background = isCurrent ? theme.accent : hoverIndex === i ? HOVER_BG : "transparent";
           const color = isCurrent ? theme.accentText : theme.text;
+          // A single fixed blue for the drop line — same above and below — so it
+          // reads consistently and stands out against every skin's palette
+          // (none of which use blue) instead of shifting color per row. An inset
+          // box-shadow keeps it prominent without shifting layout or getting
+          // clipped by the list's overflow.
+          const dropLine = [
+            showTopLine ? `inset 0 3px 0 0 ${DROP_LINE}` : "",
+            showBottomLine ? `inset 0 -3px 0 0 ${DROP_LINE}` : "",
+          ].filter(Boolean).join(", ");
           return (
             <li key={t.id}>
               <button
@@ -118,12 +147,19 @@ export function QueuePanel({
                 onDragOver={(e) => {
                   e.preventDefault();
                   e.dataTransfer.dropEffect = "move";
-                  setOverIndex(i);
+                  setOverGap(gapFor(e, i));
                 }}
                 onDrop={(e) => {
                   e.preventDefault();
                   const from = dragIndexRef.current;
-                  if (from !== null) onReorder(from, i);
+                  if (from !== null) {
+                    const gap = gapFor(e, i);
+                    // The gap indexes the array with the dragged row still in
+                    // place; once it's spliced out, gaps below it shift down by
+                    // one — so map the gap to the destination index accordingly.
+                    const to = gap > from ? gap - 1 : gap;
+                    if (to !== from) onReorder(from, to);
+                  }
                   resetDrag();
                 }}
                 onDragEnd={resetDrag}
@@ -133,7 +169,7 @@ export function QueuePanel({
                 style={{
                   background,
                   color,
-                  borderTop: isDropTarget ? `2px solid ${theme.accent}` : "2px solid transparent",
+                  boxShadow: dropLine || undefined,
                   cursor: "grab",
                   opacity: dragIndex === i ? 0.4 : 1,
                 }}
