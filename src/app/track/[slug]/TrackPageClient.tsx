@@ -12,6 +12,7 @@ import { TRACK_LINK_KEYS } from "@/lib/trackLinks";
 import { parsePeaks } from "@/lib/waveform";
 import { ArrowLeft, Loader2, Pause, Play, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useRef } from "react";
 
 interface TrackPageClientProps {
@@ -21,7 +22,8 @@ interface TrackPageClientProps {
 
 export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
   const { data: track, isLoading, error } = useTrackBySlug(slug, initialTrack);
-  const { currentTrack, isPlaying: playerIsPlaying, currentTime: playerCurrentTime, isBuffering: playerIsBuffering, toggle, seek } = usePlayer();
+  const { currentTrack, isPlaying: playerIsPlaying, currentTime: playerCurrentTime, isBuffering: playerIsBuffering, toggle, play, seek } = usePlayer();
+  const router = useRouter();
 
   const isCurrent = Boolean(track) && currentTrack?.id === track?.id;
   const isPlaying = isCurrent && playerIsPlaying;
@@ -31,16 +33,29 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
   const mainRef = useRef<HTMLElement>(null);
   useTrackVisibility(track?.id, mainRef);
 
+  function playerTrackFor(t: NonNullable<typeof track>) {
+    return {
+      id: t.id,
+      slug: t.slug,
+      title: t.title,
+      audioSrc: assetUrl(t.audioFile),
+      artworkSrc: assetUrl(t.artworkFile),
+      duration: t.duration,
+      peaks: parsePeaks(t.waveformPreview),
+    };
+  }
+
   function togglePlay() {
     if (!track) return;
-    toggle({
-      id: track.id,
-      slug: track.slug,
-      title: track.title,
-      audioSrc: assetUrl(track.audioFile),
-      artworkSrc: assetUrl(track.artworkFile),
-      duration: track.duration,
-    });
+    toggle(playerTrackFor(track));
+  }
+
+  // The Magic button starts this track (so it becomes the "now playing" one)
+  // and jumps to the full-page /player, which only ever shows what's playing.
+  function openMagicPlayer() {
+    if (!track) return;
+    play(playerTrackFor(track));
+    router.push("/player");
   }
 
   const artwork = track && (
@@ -108,10 +123,10 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
 
   const linksRow = track && (
     <div className="flex flex-col items-start self-start gap-1">
-      <Link href={`/magic/${track.slug}`} className="btn btn-ghost btn-xs gap-1">
+      <button type="button" onClick={openMagicPlayer} className="btn btn-ghost btn-xs gap-1">
         <Sparkles className="w-4 h-4" />
         Magic
-      </Link>
+      </button>
       <CopyLinkButton slug={track.slug} showLabel />
       {TRACK_LINK_KEYS.filter((key) => track.links[key]).map((key) => {
         const Icon = TRACK_LINK_ICONS[key];

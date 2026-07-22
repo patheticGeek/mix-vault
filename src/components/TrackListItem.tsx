@@ -97,7 +97,7 @@ export function TrackListItem({
   function togglePlay() {
     setHasClickedPlay(true);
     if (id === undefined) return;
-    toggle({ id, slug, title, audioSrc, artworkSrc, duration });
+    toggle({ id, slug, title, audioSrc, artworkSrc, duration, peaks });
   }
 
   const artwork = (

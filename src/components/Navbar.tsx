@@ -6,9 +6,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export function Navbar() {
-  // The magic player is a full-bleed, chrome-free experience — no navbar.
+  // The full-page player is a full-bleed, chrome-free experience — no navbar.
   const pathname = usePathname();
-  if (pathname?.startsWith("/magic/")) return null;
+  if (pathname === "/player") return null;
 
   return (
     <header className="navbar sticky top-0 z-50 bg-base-100/70 backdrop-blur-md border-b border-base-content/10">
