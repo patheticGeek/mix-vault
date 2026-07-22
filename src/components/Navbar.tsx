@@ -23,9 +23,10 @@ export function Navbar() {
           href="/player"
           aria-label="Open player"
           title="Player"
-          className="btn btn-ghost btn-circle"
+          className="btn btn-ghost gap-1 normal-case"
         >
           <AudioLines className="w-5 h-5" />
+          Player
         </Link>
         <AuthStatus />
       </div>
