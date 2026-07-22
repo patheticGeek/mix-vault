@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export function Navbar() {
   return (
-    <header className="navbar">
+    <header className="navbar sticky top-0 z-50 bg-base-100/70 backdrop-blur-md border-b border-base-content/10">
       <div className="navbar-start">
         <Link href="/" className="btn btn-ghost normal-case">
           {APP_TITLE}
