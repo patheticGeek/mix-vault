@@ -478,6 +478,120 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const hasNext = queueIndex >= 0 && queueIndex < queue.length - 1;
   const hasPrev = queueIndex > 0;
 
+  // --- Media Session ---------------------------------------------------------
+  // Surface what's playing to the OS (lock screen, notification shade, media
+  // keys, Bluetooth remotes) and wire the hardware/OS controls back to the
+  // player. All of this is a no-op where the API isn't supported.
+
+  // Push a track's metadata into the OS media UI. Kept as a stable callback so
+  // it can be reasserted from the <audio> loadstart handler too, not just when
+  // currentTrack changes — swapping the src runs the element's load algorithm,
+  // which drops the session, so without re-setting it here the notification
+  // vanishes while the next track loads.
+  const applyMediaMetadata = useCallback((track: PlayerTrack | null) => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    if (!track) {
+      navigator.mediaSession.metadata = null;
+      return;
+    }
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: track.title,
+      artwork: track.artworkSrc ? [{ src: track.artworkSrc, sizes: "512x512" }] : [],
+    });
+  }, []);
+
+  // Reflect the current track's metadata into the OS media UI.
+  useEffect(() => {
+    applyMediaMetadata(currentTrack);
+  }, [currentTrack, applyMediaMetadata]);
+
+  // Keep the OS play/pause indicator in step with our state.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    navigator.mediaSession.playbackState = currentTrack
+      ? isPlaying
+        ? "playing"
+        : "paused"
+      : "none";
+  }, [isPlaying, currentTrack]);
+
+  // Handlers for controls that don't depend on queue position: play/pause and
+  // seeking. Registered once — they read the latest state through refs.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    const ms = navigator.mediaSession;
+    const seekToSeconds = (seconds: number) => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      const max = Number.isFinite(audio.duration) ? audio.duration : seconds;
+      const clamped = Math.min(Math.max(0, seconds), max);
+      audio.currentTime = clamped;
+      setCurrentTime(clamped);
+    };
+    ms.setActionHandler("play", () => setIsPlaying(true));
+    ms.setActionHandler("pause", () => setIsPlaying(false));
+    ms.setActionHandler("seekbackward", (d) =>
+      seekToSeconds((audioRef.current?.currentTime ?? 0) - (d.seekOffset ?? 10)),
+    );
+    ms.setActionHandler("seekforward", (d) =>
+      seekToSeconds((audioRef.current?.currentTime ?? 0) + (d.seekOffset ?? 10)),
+    );
+    ms.setActionHandler("seekto", (d) => {
+      if (d.seekTime == null) return;
+      const audio = audioRef.current;
+      if (d.fastSeek && audio && "fastSeek" in audio) {
+        audio.fastSeek(d.seekTime);
+        setCurrentTime(d.seekTime);
+        return;
+      }
+      seekToSeconds(d.seekTime);
+    });
+    return () => {
+      for (const action of ["play", "pause", "seekbackward", "seekforward", "seekto"] as const) {
+        try {
+          ms.setActionHandler(action, null);
+        } catch {
+          // Unsupported action — nothing to clean up.
+        }
+      }
+    };
+  }, []);
+
+  // Previous/next handlers track queue position, so the OS greys the buttons
+  // out (null handler) at the ends of the queue instead of them doing nothing.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    const ms = navigator.mediaSession;
+    ms.setActionHandler("previoustrack", hasPrev ? () => prev() : null);
+    ms.setActionHandler("nexttrack", hasNext ? () => next() : null);
+    return () => {
+      try {
+        ms.setActionHandler("previoustrack", null);
+        ms.setActionHandler("nexttrack", null);
+      } catch {
+        // Unsupported action — nothing to clean up.
+      }
+    };
+  }, [hasNext, hasPrev, next, prev]);
+
+  // Feed the OS scrubber our position so it tracks playback and lets the user
+  // scrub from the lock screen.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    if (typeof navigator.mediaSession.setPositionState !== "function") return;
+    const duration = currentTrack?.duration;
+    if (!duration || !Number.isFinite(duration)) return;
+    try {
+      navigator.mediaSession.setPositionState({
+        duration,
+        playbackRate: audioRef.current?.playbackRate ?? 1,
+        position: Math.min(Math.max(0, currentTime), duration),
+      });
+    } catch {
+      // Invalid state (e.g. position past duration mid-swap) — skip this tick.
+    }
+  }, [currentTrack, currentTime]);
+
   const value = useMemo<PlayerContextValue>(
     () => ({
       currentTrack,
@@ -516,6 +630,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         ref={audioRef}
         src={currentTrack?.audioSrc}
         preload="metadata"
+        onLoadStart={() => applyMediaMetadata(currentTrackRef.current)}
         onPlay={() => setIsPlaying(true)}
         onPause={() => {
           setIsBuffering(false);
