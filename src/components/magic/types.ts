@@ -15,6 +15,13 @@ export interface MagicSkinTrack {
   duration: number;
 }
 
+export interface MagicQueueItem {
+  id: string;
+  title: string;
+  artworkSrc: string;
+  duration: number;
+}
+
 export interface WinampSkinProps {
   track: MagicSkinTrack;
 
@@ -33,6 +40,17 @@ export interface WinampSkinProps {
   // (e.g. fall back to a flat bar or a fake animated visualizer).
   peaks: number[];
 
+  // --- Queue / playlist ---
+  // The ordered list of tracks playback moves through. May be empty. Skins
+  // are free to ignore this and just render the now-playing `track`, or to
+  // draw a Winamp-style playlist from it.
+  queue: MagicQueueItem[];
+  // Index of the now-playing track within `queue`, or -1 if it isn't in it.
+  currentIndex: number;
+  // Whether there's a track after / before the current one to move to.
+  hasNext: boolean;
+  hasPrev: boolean;
+
   // --- Controls (all no-argument-safe to call) ---
   // Play if paused, pause if playing.
   onTogglePlay: () => void;
@@ -40,6 +58,11 @@ export interface WinampSkinProps {
   onSeek: (fraction: number) => void;
   // Set output volume, 0..1.
   onVolumeChange: (volume: number) => void;
+  // Move to the next / previous queued track (no-op at the ends).
+  onNext: () => void;
+  onPrev: () => void;
+  // Jump to and play the queue item at the given index.
+  onSelectTrack: (index: number) => void;
 
   // --- Helpers ---
   // Formats a seconds value as "m:ss" (e.g. 75 -> "1:15"). Returns "--:--"

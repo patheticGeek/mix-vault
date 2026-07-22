@@ -28,11 +28,26 @@ interface PlayerContextValue {
   // page hero) is on screen somewhere right now — see useTrackVisibility.
   // The mini player only shows itself when this is false.
   isCurrentVisible: boolean;
+  // The ordered list of tracks playback advances through, and the position
+  // of the current track within it (-1 when the current track isn't part of
+  // the queue). Populated by the /player view; empty elsewhere.
+  queue: PlayerTrack[];
+  queueIndex: number;
+  hasNext: boolean;
+  hasPrev: boolean;
   play: (track: PlayerTrack) => void;
   pause: () => void;
   toggle: (track: PlayerTrack) => void;
   seek: (fraction: number) => void;
   setVolume: (volume: number) => void;
+  // Replace the queue without disturbing what's currently playing — lets a
+  // page adopt a track list as the queue while playback keeps going.
+  setQueue: (tracks: PlayerTrack[]) => void;
+  // Replace the queue and start playing the track at startIndex.
+  playQueue: (tracks: PlayerTrack[], startIndex: number) => void;
+  // Advance to the next / previous track in the queue (no-op at the ends).
+  next: () => void;
+  prev: () => void;
   setVisible: (id: string, visible: boolean) => void;
   // Fully drops the current track rather than just pausing it, so nothing
   // is left for the mini player to pick up — for ephemeral playback (like a
@@ -59,6 +74,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [isBuffering, setIsBuffering] = useState(false);
   const [isCurrentVisible, setIsCurrentVisible] = useState(false);
   const [volume, setVolumeState] = useState(1);
+  const [queue, setQueueState] = useState<PlayerTrack[]>([]);
 
   // Mirror the latest track/playing state into refs so the callbacks below
   // can stay referentially stable (no deps on state) instead of changing
@@ -66,6 +82,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const currentTrackRef = useRef<PlayerTrack | null>(null);
   const isPlayingRef = useRef(false);
   const visibleIds = useRef<Set<string>>(new Set());
+  const queueRef = useRef<PlayerTrack[]>([]);
+
+  useEffect(() => {
+    queueRef.current = queue;
+  }, [queue]);
 
   useEffect(() => {
     currentTrackRef.current = currentTrack;
@@ -107,6 +128,48 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setIsPlaying(true);
   }, []);
 
+  // Swap the queue out from under playback without interrupting it — the
+  // current track keeps playing and just gets relocated within the new list
+  // (its index is derived from currentTrack, so nothing else to update).
+  const setQueue = useCallback((tracks: PlayerTrack[]) => {
+    queueRef.current = tracks;
+    setQueueState(tracks);
+  }, []);
+
+  const playQueue = useCallback(
+    (tracks: PlayerTrack[], startIndex: number) => {
+      const track = tracks[startIndex];
+      if (!track) return;
+      queueRef.current = tracks;
+      setQueueState(tracks);
+      play(track);
+    },
+    [play],
+  );
+
+  // Move `offset` steps through the queue relative to the current track,
+  // starting playback there. Returns whether it actually moved, so callers
+  // (like auto-advance) can decide what to do at the ends.
+  const playAtOffset = useCallback(
+    (offset: number) => {
+      const q = queueRef.current;
+      const idx = q.findIndex((t) => t.id === currentTrackRef.current?.id);
+      const target = idx + offset;
+      if (idx < 0 || target < 0 || target >= q.length) return false;
+      play(q[target]);
+      return true;
+    },
+    [play],
+  );
+
+  const next = useCallback(() => {
+    playAtOffset(1);
+  }, [playAtOffset]);
+
+  const prev = useCallback(() => {
+    playAtOffset(-1);
+  }, [playAtOffset]);
+
   // Keep the <audio> element's volume in sync. Clamped so callers can pass
   // a raw slider value without worrying about going out of range.
   const setVolume = useCallback((next: number) => {
@@ -145,6 +208,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setCurrentTime(0);
   }, []);
 
+  // Where the current track sits in the queue, and whether there's anywhere
+  // to go from here. Derived (not stored) so it can never drift out of sync
+  // with what's actually playing.
+  const queueIndex = useMemo(
+    () => (currentTrack ? queue.findIndex((t) => t.id === currentTrack.id) : -1),
+    [queue, currentTrack],
+  );
+  const hasNext = queueIndex >= 0 && queueIndex < queue.length - 1;
+  const hasPrev = queueIndex > 0;
+
   const value = useMemo<PlayerContextValue>(
     () => ({
       currentTrack,
@@ -153,15 +226,23 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       isBuffering,
       volume,
       isCurrentVisible,
+      queue,
+      queueIndex,
+      hasNext,
+      hasPrev,
       play,
       pause,
       toggle,
       seek,
       setVolume,
+      setQueue,
+      playQueue,
+      next,
+      prev,
       setVisible,
       discard,
     }),
-    [currentTrack, isPlaying, currentTime, isBuffering, volume, isCurrentVisible, play, pause, toggle, seek, setVolume, setVisible, discard],
+    [currentTrack, isPlaying, currentTime, isBuffering, volume, isCurrentVisible, queue, queueIndex, hasNext, hasPrev, play, pause, toggle, seek, setVolume, setQueue, playQueue, next, prev, setVisible, discard],
   );
 
   return (
@@ -178,7 +259,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         }}
         onEnded={() => {
           setIsBuffering(false);
-          setIsPlaying(false);
+          // Roll onto the next queued track if there is one, otherwise stop.
+          if (!playAtOffset(1)) setIsPlaying(false);
         }}
         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
         onWaiting={() => setIsBuffering(true)}
