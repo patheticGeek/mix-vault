@@ -21,9 +21,9 @@ export function TerminalSkin({
   onVolumeChange,
   formatTime,
 }: WinampSkinProps) {
-  const seekRef = useRef<HTMLDivElement>(null);
+  const seekRef = useRef<HTMLSpanElement>(null);
 
-  function handleSeek(e: React.MouseEvent<HTMLDivElement>) {
+  function handleSeek(e: React.MouseEvent<HTMLSpanElement>) {
     const el = seekRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -118,19 +118,24 @@ export function TerminalSkin({
           vu |{vu}|
         </div>
 
-        {/* ASCII seek/progress bar */}
-        <div
-          ref={seekRef}
-          onClick={handleSeek}
-          className="mt-2 cursor-pointer whitespace-pre"
-          role="slider"
-          aria-label="Seek"
-          aria-valuenow={Math.round(progress * 100)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          style={{ letterSpacing: 1 }}
-        >
-          [{barText}]
+        {/* ASCII seek/progress bar. Only the inner bar (between the brackets)
+            is the click target, so a click maps to exactly the spot under the
+            cursor instead of the full-width row. */}
+        <div className="mt-2 whitespace-pre" style={{ letterSpacing: 1 }}>
+          [
+          <span
+            ref={seekRef}
+            onClick={handleSeek}
+            className="inline-block cursor-pointer align-baseline"
+            role="slider"
+            aria-label="Seek"
+            aria-valuenow={Math.round(progress * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            {barText}
+          </span>
+          ]
         </div>
 
         {/* Time */}

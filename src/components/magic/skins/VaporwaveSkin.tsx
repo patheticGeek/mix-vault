@@ -111,6 +111,8 @@ export function VaporwaveSkin({
             transform: "perspective(140px) rotateX(58deg)",
             transformOrigin: "bottom",
             animation: "vw-drift 1.6s linear infinite",
+            // Freeze the grid in place while paused rather than resetting it.
+            animationPlayState: isPlaying ? "running" : "paused",
           }}
         />
         {/* Artwork disc */}
@@ -123,7 +125,10 @@ export function VaporwaveSkin({
               overflow: "hidden",
               border: "3px solid rgba(255,255,255,.85)",
               boxShadow: "0 0 26px rgba(1,205,254,.9)",
-              animation: isPlaying ? "vw-spin 8s linear infinite" : undefined,
+              // Keep the animation mounted and just pause it, so the disc holds
+              // at its current angle instead of snapping back to 0° on pause.
+              animation: "vw-spin 8s linear infinite",
+              animationPlayState: isPlaying ? "running" : "paused",
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
