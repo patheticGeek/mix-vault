@@ -6,8 +6,9 @@ import {
 } from "@icons-pack/react-simple-icons";
 import type { ComponentType } from "react";
 
-export const APP_TITLE = "Pathetic's Vault";
-export const APP_DESC = "A dump of my mixes for everyone to enjoy in HQ :)";
+export const APP_TITLE = "Pathetic's Mix Vault";
+export const APP_DESC =
+  "A collection of my mixes for everyone to enjoy in HQ :)";
 
 export interface SocialMediaLink {
   label: string;
