@@ -2,7 +2,7 @@
 
 import { usePlayer } from "@/components/PlayerProvider";
 import { TrackListItem } from "@/components/TrackListItem";
-import { APP_DESC, APP_TITLE, SOCIAL_MEDIA } from "@/config";
+import { APP_DESC, SOCIAL_MEDIA } from "@/config";
 import { useListTracks, type TrackSummary } from "@/hooks/queries/useListTracks";
 import { assetUrl } from "@/lib/cdn";
 import { timeAgo } from "@/lib/time";
@@ -44,7 +44,6 @@ export function HomeClient({ initialTracks }: HomeClientProps) {
     <div className="bg-base-100 text-base-content min-h-[calc(100vh-4rem)]">
       <main className="max-w-3xl mx-auto px-4 py-10">
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold">{APP_TITLE}</h1>
           <p className="py-2 max-w-xl mx-auto text-base-content/60">{APP_DESC}</p>
 
           {SOCIAL_MEDIA.length > 0 && (
