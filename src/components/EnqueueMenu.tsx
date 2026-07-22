@@ -7,12 +7,17 @@ interface EnqueueMenuProps {
   track: PlayerTrack;
   className?: string;
   showLabel?: boolean;
+  // Which edge of the trigger the menu aligns to. "end" (right-aligned,
+  // opening leftward) suits a right-aligned trigger like the list rows;
+  // "start" opens rightward and is right for a left-aligned trigger like the
+  // track page, where "end" would run off the left of the screen.
+  align?: "start" | "end";
 }
 
 // Small "add this track to the queue" control used on the homepage list and
 // the track page. Offers "Play next" (insert after the current track) and
 // "Add to queue" (append), both routed through the shared player.
-export function EnqueueMenu({ track, className = "", showLabel = false }: EnqueueMenuProps) {
+export function EnqueueMenu({ track, className = "", showLabel = false, align = "end" }: EnqueueMenuProps) {
   const { playNext, addToQueue } = usePlayer();
 
   // Close the DaisyUI dropdown after picking, which stays open until focus
@@ -22,7 +27,7 @@ export function EnqueueMenu({ track, className = "", showLabel = false }: Enqueu
   }
 
   return (
-    <div className={`dropdown dropdown-end ${className}`}>
+    <div className={`dropdown ${align === "end" ? "dropdown-end" : ""} ${className}`}>
       <button
         type="button"
         tabIndex={0}
