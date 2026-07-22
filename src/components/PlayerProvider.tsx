@@ -68,6 +68,47 @@ export function usePlayer(): PlayerContextValue {
   return ctx;
 }
 
+// Persist enough of the player to resume where the listener left off after a
+// reload: the queue, which track was current, and how far into it they were.
+// isPlaying is deliberately not stored — restored playback starts paused (and
+// browsers block autoplay anyway), so the listener presses play to resume.
+const STORAGE_KEY = "mix-vault:player";
+// How often the current time is written out while playing. Frequent enough to
+// resume close to where they were, infrequent enough to stay off the hot path.
+const TIME_SAVE_INTERVAL_MS = 5000;
+
+interface PersistedPlayer {
+  queue: PlayerTrack[];
+  currentTrack: PlayerTrack | null;
+  currentTime: number;
+}
+
+function loadPersisted(): PersistedPlayer | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PersistedPlayer;
+    if (!parsed || !Array.isArray(parsed.queue)) return null;
+    return {
+      queue: parsed.queue,
+      currentTrack: parsed.currentTrack ?? null,
+      currentTime: typeof parsed.currentTime === "number" ? parsed.currentTime : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function savePersisted(state: PersistedPlayer) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Storage full or unavailable (private mode) — persistence is best-effort.
+  }
+}
+
 // Single <audio> element for the whole app, mounted here rather than per
 // track, so playback survives navigating between pages instead of being
 // torn down and recreated with each one.
@@ -88,10 +129,74 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const isPlayingRef = useRef(false);
   const visibleIds = useRef<Set<string>>(new Set());
   const queueRef = useRef<PlayerTrack[]>([]);
+  const currentTimeRef = useRef(0);
+  // Time to seek to once the restored track's metadata has loaded — the
+  // <audio> element ignores currentTime until it knows the media's duration.
+  const pendingSeekRef = useRef<number | null>(null);
+  // Guards the persistence effects from writing during the first render, so a
+  // fresh (empty) state can't clobber what we're about to hydrate from storage.
+  const hydratedRef = useRef(false);
 
   useEffect(() => {
     queueRef.current = queue;
   }, [queue]);
+
+  useEffect(() => {
+    currentTimeRef.current = currentTime;
+  }, [currentTime]);
+
+  // Restore the last session's queue and position on mount. Runs once, before
+  // the persistence effects are allowed to write (hydratedRef).
+  useEffect(() => {
+    const saved = loadPersisted();
+    if (saved && saved.currentTrack) {
+      queueRef.current = saved.queue;
+      setQueueState(saved.queue);
+      currentTrackRef.current = saved.currentTrack;
+      setCurrentTrack(saved.currentTrack);
+      pendingSeekRef.current = saved.currentTime;
+      currentTimeRef.current = saved.currentTime;
+      setCurrentTime(saved.currentTime);
+    }
+    hydratedRef.current = true;
+  }, []);
+
+  // Persist the queue and current track whenever either changes. currentTime
+  // rides along using its latest value; the interval below keeps it fresh.
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    savePersisted({ queue, currentTrack, currentTime: currentTimeRef.current });
+  }, [queue, currentTrack]);
+
+  // While something is playing, write the current time out every few seconds
+  // so a reload resumes close to where the listener was.
+  useEffect(() => {
+    if (!isPlaying || !currentTrack) return;
+    const id = window.setInterval(() => {
+      savePersisted({
+        queue: queueRef.current,
+        currentTrack: currentTrackRef.current,
+        currentTime: currentTimeRef.current,
+      });
+    }, TIME_SAVE_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [isPlaying, currentTrack]);
+
+  // Flush the current position when the tab is closed, hidden, or navigated
+  // away from, so we don't lose up to a whole save interval on exit. pagehide
+  // is used over unload — it fires reliably on mobile and with the bfcache.
+  useEffect(() => {
+    const flush = () => {
+      if (!currentTrackRef.current) return;
+      savePersisted({
+        queue: queueRef.current,
+        currentTrack: currentTrackRef.current,
+        currentTime: currentTimeRef.current,
+      });
+    };
+    window.addEventListener("pagehide", flush);
+    return () => window.removeEventListener("pagehide", flush);
+  }, []);
 
   useEffect(() => {
     currentTrackRef.current = currentTrack;
@@ -334,6 +439,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           setIsBuffering(false);
           // Roll onto the next queued track if there is one, otherwise stop.
           if (!playAtOffset(1)) setIsPlaying(false);
+        }}
+        onLoadedMetadata={(e) => {
+          // Apply a restored position once the element can accept a seek.
+          const pending = pendingSeekRef.current;
+          if (pending != null) {
+            pendingSeekRef.current = null;
+            if (pending > 0 && pending < e.currentTarget.duration) {
+              e.currentTarget.currentTime = pending;
+              setCurrentTime(pending);
+            }
+          }
         }}
         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
         onWaiting={() => setIsBuffering(true)}
