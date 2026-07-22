@@ -4,8 +4,11 @@ import { usePlayer } from "@/components/PlayerProvider";
 import { QueuePanel, type QueuePanelItem } from "@/components/magic/QueuePanel";
 import { SkinSelector } from "@/components/magic/SkinSelector";
 import { DEFAULT_SKIN_ID, SKINS, getSkin } from "@/components/magic/skins";
+import { useListTracks } from "@/hooks/queries/useListTracks";
+import { assetUrl } from "@/lib/cdn";
 import { formatDuration } from "@/lib/time";
-import { ArrowLeft, ListMusic } from "lucide-react";
+import { parsePeaks } from "@/lib/waveform";
+import { ArrowLeft, ListMusic, Play } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -30,11 +33,32 @@ export function PlayerPageClient() {
     toggle,
     seek,
     setVolume,
+    playQueue,
     playAt,
     reorderQueue,
     next,
     prev,
   } = usePlayer();
+
+  // The full track list, only needed for the "play all" affordance shown
+  // when nothing is queued yet.
+  const { data: tracks } = useListTracks();
+  const allTracks = useMemo(
+    () =>
+      (tracks ?? []).map((t) => ({
+        id: t.id,
+        slug: t.slug,
+        title: t.title,
+        audioSrc: assetUrl(t.audioFile),
+        artworkSrc: assetUrl(t.artworkFile),
+        duration: t.duration,
+        peaks: parsePeaks(t.waveformPreview),
+      })),
+    [tracks],
+  );
+  const playAll = useCallback(() => {
+    if (allTracks.length > 0) playQueue(allTracks, 0);
+  }, [allTracks, playQueue]);
 
   const [skinId, setSkinId] = useState(DEFAULT_SKIN_ID);
 
@@ -121,6 +145,12 @@ export function PlayerPageClient() {
               </Link>
               .
             </p>
+            {allTracks.length > 0 && (
+              <button type="button" onClick={playAll} className="btn btn-sm btn-primary mt-3 gap-1">
+                <Play className="h-4 w-4" fill="currentColor" />
+                Play all {allTracks.length} tracks
+              </button>
+            )}
           </div>
         )}
 
