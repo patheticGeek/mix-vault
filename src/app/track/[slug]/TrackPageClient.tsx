@@ -114,7 +114,7 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
 
   const linksRow = track && (
     <div className="flex flex-col items-start self-start gap-1">
-      <EnqueueMenu track={playerTrackFor(track)} showLabel />
+      <EnqueueMenu track={playerTrackFor(track)} showLabel align="start" />
       <CopyLinkButton slug={track.slug} showLabel />
       {TRACK_LINK_KEYS.filter((key) => track.links[key]).map((key) => {
         const Icon = TRACK_LINK_ICONS[key];
