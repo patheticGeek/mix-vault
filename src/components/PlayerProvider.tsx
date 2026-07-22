@@ -42,6 +42,9 @@ interface PlayerContextValue {
   toggle: (track: PlayerTrack) => void;
   seek: (fraction: number) => void;
   setVolume: (volume: number) => void;
+  // Replace the queue with a fresh list and start playing at startIndex —
+  // used by "play all".
+  playQueue: (tracks: PlayerTrack[], startIndex?: number) => void;
   // Play the track at the given index of the *current* queue, without
   // rebuilding the queue (unlike play).
   playAt: (index: number) => void;
@@ -130,6 +133,20 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     (track: PlayerTrack) => {
       if (currentTrackRef.current?.id !== track.id) setCurrentTime(0);
       commitQueue([track]);
+      setCurrentTrack(track);
+      setIsPlaying(true);
+    },
+    [commitQueue],
+  );
+
+  // Replace the queue with a whole list and start playing at startIndex —
+  // the "play all" entry point.
+  const playQueue = useCallback(
+    (tracks: PlayerTrack[], startIndex = 0) => {
+      const track = tracks[startIndex];
+      if (!track) return;
+      commitQueue(tracks);
+      if (currentTrackRef.current?.id !== track.id) setCurrentTime(0);
       setCurrentTrack(track);
       setIsPlaying(true);
     },
@@ -292,6 +309,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       toggle,
       seek,
       setVolume,
+      playQueue,
       playAt,
       addToQueue,
       playNext,
@@ -301,7 +319,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setVisible,
       discard,
     }),
-    [currentTrack, isPlaying, currentTime, isBuffering, volume, isCurrentVisible, queue, queueIndex, hasNext, hasPrev, play, pause, toggle, seek, setVolume, playAt, addToQueue, playNext, reorderQueue, next, prev, setVisible, discard],
+    [currentTrack, isPlaying, currentTime, isBuffering, volume, isCurrentVisible, queue, queueIndex, hasNext, hasPrev, play, pause, toggle, seek, setVolume, playQueue, playAt, addToQueue, playNext, reorderQueue, next, prev, setVisible, discard],
   );
 
   return (
