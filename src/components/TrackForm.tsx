@@ -9,14 +9,15 @@ import { useDeleteTrack } from "@/hooks/mutations/useDeleteTrack";
 import { useTrackVisibility } from "@/hooks/useTrackVisibility";
 import { useUpdateTrack } from "@/hooks/mutations/useUpdateTrack";
 import type { TrackResponse } from "@/hooks/queries/useTrack";
+import { useWaveform } from "@/hooks/queries/useWaveform";
 import { extractAudioMetadata } from "@/lib/audioMetadata";
 import { assetUrl } from "@/lib/cdn";
 import { formatDuration } from "@/lib/time";
 import { TRACK_LINK_KEYS, type TrackLinkKey } from "@/lib/trackLinks";
-import { extractWaveformPeaks, parsePeaks, type WaveformAnalysis } from "@/lib/waveform";
+import { extractWaveformPeaks, type WaveformAnalysis } from "@/lib/waveform";
 import { Loader2, Pause, Play } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
 // A static placeholder shape for the waveform slot before any audio is
@@ -103,10 +104,9 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   const audioSrc = audioPreviewUrl ?? (track ? assetUrl(track.audioFile) : null);
   const artworkSrc = artworkPreviewUrl ?? (track ? assetUrl(track.artworkFile) : null);
 
-  const existingWaveformPeaks = useMemo(
-    () => (track ? parsePeaks(track.waveformPreview) : null),
-    [track],
-  );
+  // When editing, the existing track's waveform is fetched separately (the
+  // track fetch no longer includes it).
+  const { data: existingWaveformPeaks } = useWaveform(track?.id);
 
   const previewPeaks = waveformAnalysis?.peaks ?? existingWaveformPeaks ?? [];
   const previewDuration = waveformAnalysis?.duration ?? track?.duration ?? 0;

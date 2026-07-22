@@ -6,8 +6,6 @@ import { APP_DESC, SOCIAL_MEDIA } from "@/config";
 import { useListTracks, type TrackSummary } from "@/hooks/queries/useListTracks";
 import { assetUrl } from "@/lib/cdn";
 import { timeAgo } from "@/lib/time";
-import { parsePeaks } from "@/lib/waveform";
-import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 interface HomeClientProps {
@@ -23,18 +21,6 @@ export function HomeClient({ initialTracks }: HomeClientProps) {
   useEffect(() => {
     if (currentTrack) setLastPlayedId(currentTrack.id);
   }, [currentTrack]);
-
-  // Seed the by-id/by-slug track query caches with the tracks the server
-  // already rendered, so following a link into one of them (e.g. via
-  // useTrackBySlug on /track/:slug) reads from cache instead of firing a
-  // redundant fetch.
-  const queryClient = useQueryClient();
-  useEffect(() => {
-    for (const track of initialTracks) {
-      queryClient.setQueryData(["tracks", track.id], track);
-      queryClient.setQueryData(["tracks", "slug", track.slug], track);
-    }
-  }, [initialTracks, queryClient]);
 
   // The server already rendered the most recent few tracks; show those
   // immediately and let the client-side fetch (above) bring in the rest.
@@ -87,7 +73,6 @@ export function HomeClient({ initialTracks }: HomeClientProps) {
                 id={track.id}
                 title={track.title}
                 tags={track.tags}
-                peaks={parsePeaks(track.waveformPreview)}
                 duration={track.duration}
                 audioSrc={assetUrl(track.audioFile)}
                 artworkSrc={assetUrl(track.artworkFile)}

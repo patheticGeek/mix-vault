@@ -9,10 +9,6 @@ export interface PlayerTrack {
   audioSrc: string;
   artworkSrc: string;
   duration: number;
-  // Precomputed waveform amplitudes (0..1), carried along so the full-page
-  // /player view can draw a real visualizer without re-fetching the track.
-  // Optional because ephemeral sources (like a form preview) may not have it.
-  peaks?: number[];
 }
 
 interface PlayerContextValue {

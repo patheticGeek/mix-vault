@@ -5,9 +5,9 @@ import { QueuePanel, type QueuePanelItem } from "@/components/magic/QueuePanel";
 import { SkinSelector } from "@/components/magic/SkinSelector";
 import { DEFAULT_SKIN_ID, SKINS, getSkin } from "@/components/magic/skins";
 import { useListTracks } from "@/hooks/queries/useListTracks";
+import { useWaveform } from "@/hooks/queries/useWaveform";
 import { assetUrl } from "@/lib/cdn";
 import { formatDuration } from "@/lib/time";
-import { parsePeaks } from "@/lib/waveform";
 import { ArrowLeft, ListMusic, Play } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -52,7 +52,6 @@ export function PlayerPageClient() {
         audioSrc: assetUrl(t.audioFile),
         artworkSrc: assetUrl(t.artworkFile),
         duration: t.duration,
-        peaks: parsePeaks(t.waveformPreview),
       })),
     [tracks],
   );
@@ -79,6 +78,10 @@ export function PlayerPageClient() {
   const onTogglePlay = useCallback(() => {
     if (currentTrack) toggle(currentTrack);
   }, [currentTrack, toggle]);
+
+  // The queue no longer carries peaks, so fetch the waveform for whatever's
+  // playing to feed the skin's visualizer.
+  const { data: peaks = [] } = useWaveform(currentTrack?.id);
 
   const queueItems = useMemo<QueuePanelItem[]>(
     () =>
@@ -128,7 +131,7 @@ export function PlayerPageClient() {
             currentTime={currentTime}
             progress={progress}
             volume={volume}
-            peaks={currentTrack.peaks ?? []}
+            peaks={peaks}
             onTogglePlay={onTogglePlay}
             onSeek={seek}
             onVolumeChange={setVolume}

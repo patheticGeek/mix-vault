@@ -6,6 +6,7 @@ import { usePlayer } from "@/components/PlayerProvider";
 import { Waveform } from "@/components/Waveform";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
 import { useTrackVisibility } from "@/hooks/useTrackVisibility";
+import { useWaveform } from "@/hooks/queries/useWaveform";
 import { formatDuration } from "@/lib/time";
 import { TRACK_LINK_KEYS, type TrackLinks } from "@/lib/trackLinks";
 import { Loader2, Pause, Play } from "lucide-react";
@@ -54,7 +55,6 @@ interface TrackListItemProps {
   title: string;
   description?: string;
   tags: string[];
-  peaks: number[];
   duration: number;
   audioSrc: string;
   artworkSrc: string;
@@ -64,9 +64,9 @@ interface TrackListItemProps {
   isLastPlayed?: boolean;
 }
 
-// Presentational only — deliberately takes resolved values (urls, parsed
-// peaks, a pre-formatted time label) rather than a raw track record, so the
-// same component can render either a saved track or a live form preview.
+// Presentational only — deliberately takes resolved values (urls, a
+// pre-formatted time label) rather than a raw track record, so the same
+// component can render either a saved track or a live form preview.
 // `id` is optional because a live form preview has no saved track to key
 // playback state on — it just won't participate in the shared player.
 export function TrackListItem({
@@ -74,7 +74,6 @@ export function TrackListItem({
   title,
   description,
   tags,
-  peaks,
   duration,
   audioSrc,
   artworkSrc,
@@ -93,6 +92,10 @@ export function TrackListItem({
   useTrackVisibility(id, itemRef);
   const router = useRouter();
 
+  // Waveform peaks are fetched separately from the list data (which no longer
+  // carries them); the bars stay flat until they arrive.
+  const { data: peaks = [] } = useWaveform(id);
+
   // Clicking anywhere on the card that isn't an interactive control opens the
   // track page. The interactive clusters below (artwork/play, links, and the
   // waveform while it's seekable) stop propagation so they don't trigger this.
@@ -106,7 +109,7 @@ export function TrackListItem({
   function togglePlay() {
     setHasClickedPlay(true);
     if (id === undefined) return;
-    toggle({ id, slug, title, audioSrc, artworkSrc, duration, peaks });
+    toggle({ id, slug, title, audioSrc, artworkSrc, duration });
   }
 
   const artwork = (
@@ -157,7 +160,7 @@ export function TrackListItem({
         </div>
       )}
       {id !== undefined && (
-        <EnqueueMenu track={{ id, slug, title, audioSrc, artworkSrc, duration, peaks }} />
+        <EnqueueMenu track={{ id, slug, title, audioSrc, artworkSrc, duration }} />
       )}
       {slug && <CopyLinkButton slug={slug} />}
     </div>
