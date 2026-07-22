@@ -3,13 +3,13 @@
 import { usePlayer } from "@/components/PlayerProvider";
 import { QueuePanel, type QueuePanelItem } from "@/components/magic/QueuePanel";
 import { SkinSelector } from "@/components/magic/SkinSelector";
+import { TrackPickerPanel } from "@/components/magic/TrackPickerPanel";
 import { DEFAULT_SKIN_ID, SKINS, getSkin } from "@/components/magic/skins";
 import { useListTracks } from "@/hooks/queries/useListTracks";
 import { useWaveform } from "@/hooks/queries/useWaveform";
 import { assetUrl } from "@/lib/cdn";
 import { formatDuration } from "@/lib/time";
-import { ArrowLeft, ListMusic, Play } from "lucide-react";
-import Link from "next/link";
+import { ArrowLeft, ListMusic } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -37,6 +37,8 @@ export function PlayerPageClient() {
     playQueue,
     playAt,
     reorderQueue,
+    removeFromQueue,
+    clearQueue,
     next,
     prev,
   } = usePlayer();
@@ -49,8 +51,8 @@ export function PlayerPageClient() {
     else router.push("/");
   }, [router]);
 
-  // The full track list, only needed for the "play all" affordance shown
-  // when nothing is queued yet.
+  // The full track list, offered as the quick-start picker when nothing is
+  // queued yet.
   const { data: tracks } = useListTracks();
   const allTracks = useMemo(
     () =>
@@ -64,14 +66,14 @@ export function PlayerPageClient() {
       })),
     [tracks],
   );
-  const playAll = useCallback(() => {
-    if (allTracks.length > 0) playQueue(allTracks, 0);
-  }, [allTracks, playQueue]);
 
   const [skinId, setSkinId] = useState(DEFAULT_SKIN_ID);
 
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? localStorage.getItem(SKIN_STORAGE_KEY) : null;
+    const stored =
+      typeof window !== "undefined"
+        ? localStorage.getItem(SKIN_STORAGE_KEY)
+        : null;
     if (stored && SKINS.some((s) => s.id === stored)) setSkinId(stored);
   }, []);
 
@@ -150,20 +152,19 @@ export function PlayerPageClient() {
           <div className="flex flex-col items-center gap-2 text-center text-white/70">
             <ListMusic className="h-8 w-8 text-white/40" />
             <p className="text-lg font-semibold">Nothing playing</p>
-            <p className="text-sm text-white/50">
-              Play a track, or add one to the queue from the{" "}
-              <Link href="/" className="underline hover:text-white">
-                track list
-              </Link>
-              .
-            </p>
-            {allTracks.length > 0 && (
-              <button type="button" onClick={playAll} className="btn btn-sm btn-primary mt-3 gap-1">
-                <Play className="h-4 w-4" fill="currentColor" />
-                Play all {allTracks.length} tracks
-              </button>
-            )}
+            <p className="text-sm text-white/50">Pick a track to play.</p>
           </div>
+        )}
+
+        {/* Nothing queued yet: offer the whole library as a quick-start list so
+            the listener can kick something off without leaving the player. */}
+        {!currentTrack && allTracks.length > 0 && (
+          <TrackPickerPanel
+            items={allTracks}
+            theme={theme}
+            formatTime={formatDuration}
+            onPlay={(index) => playQueue(allTracks, index)}
+          />
         )}
 
         {queueItems.length > 0 && (
@@ -180,16 +181,26 @@ export function PlayerPageClient() {
             onTogglePlay={onTogglePlay}
             onNext={next}
             onPrev={prev}
+            onRemove={(index) => {
+              const track = queue[index];
+              if (track) removeFromQueue(track.id);
+            }}
+            onClear={clearQueue}
           />
         )}
       </div>
 
-      {/* Skin picker, pinned bottom-center and themed to the active skin. */}
-      {currentTrack && (
-        <div className="fixed bottom-4 left-1/2 z-20 -translate-x-1/2">
-          <SkinSelector skins={SKINS} activeId={skinId} theme={theme} onSelect={selectSkin} />
-        </div>
-      )}
+      {/* Skin picker, pinned bottom-center and themed to the active skin.
+          Always shown, including the empty state, so the listener can dress
+          the player before anything's playing. */}
+      <div className="fixed bottom-4 left-1/2 z-20 -translate-x-1/2">
+        <SkinSelector
+          skins={SKINS}
+          activeId={skinId}
+          theme={theme}
+          onSelect={selectSkin}
+        />
+      </div>
 
       {/* Subtle escape hatch — back to whatever page the user came from. */}
       <button

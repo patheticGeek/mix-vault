@@ -1,7 +1,7 @@
 "use client";
 
 import type { SkinTheme } from "@/components/magic/types";
-import { GripVertical, ListMusic, Pause, Play, SkipBack, SkipForward } from "lucide-react";
+import { GripVertical, ListMusic, Pause, Play, SkipBack, SkipForward, Trash2, X } from "lucide-react";
 import { useRef, useState } from "react";
 
 export interface QueuePanelItem {
@@ -24,6 +24,10 @@ interface QueuePanelProps {
   onTogglePlay: () => void;
   onNext: () => void;
   onPrev: () => void;
+  // Drop a single row from the queue.
+  onRemove: (index: number) => void;
+  // Empty the whole queue.
+  onClear: () => void;
 }
 
 // A neutral translucent hover that reads on both light (iPod) and dark skins,
@@ -50,6 +54,8 @@ export function QueuePanel({
   onTogglePlay,
   onNext,
   onPrev,
+  onRemove,
+  onClear,
 }: QueuePanelProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   // The insertion point, expressed as a gap between rows: gap `g` means "land
@@ -92,14 +98,22 @@ export function QueuePanel({
         className="flex items-center justify-between gap-2 px-3 py-2"
         style={{ borderBottom: theme.border }}
       >
-        <span
-          className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider"
-          style={{ color: theme.textMuted }}
-        >
-          <ListMusic className="h-3.5 w-3.5" />
-          Queue
-          <span style={{ opacity: 0.6 }}>· {items.length}</span>
-        </span>
+        <div className="flex items-center gap-1.5" style={{ color: theme.textMuted }}>
+          <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
+            <ListMusic className="h-3.5 w-3.5" />
+            Queue
+            <span style={{ opacity: 0.6 }}>· {items.length}</span>
+          </span>
+          <button
+            type="button"
+            onClick={onClear}
+            disabled={items.length === 0}
+            aria-label="Clear queue"
+            className={transportBtn}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
         <div className="flex items-center" style={{ color: theme.text }}>
           <button type="button" onClick={onPrev} disabled={!hasPrev} aria-label="Previous track" className={transportBtn}>
             <SkipBack className="h-4 w-4" fill="currentColor" />
@@ -134,7 +148,12 @@ export function QueuePanel({
             showBottomLine ? `inset 0 -3px 0 0 ${DROP_LINE}` : "",
           ].filter(Boolean).join(", ");
           return (
-            <li key={t.id}>
+            <li
+              key={t.id}
+              className="relative"
+              onMouseEnter={() => setHoverIndex(i)}
+              onMouseLeave={() => setHoverIndex((h) => (h === i ? null : h))}
+            >
               <button
                 type="button"
                 draggable
@@ -163,8 +182,6 @@ export function QueuePanel({
                   resetDrag();
                 }}
                 onDragEnd={resetDrag}
-                onMouseEnter={() => setHoverIndex(i)}
-                onMouseLeave={() => setHoverIndex((h) => (h === i ? null : h))}
                 className="flex w-full items-center gap-2.5 px-2 py-2 text-left transition-colors"
                 style={{
                   background,
@@ -191,10 +208,24 @@ export function QueuePanel({
                 <span className="min-w-0 flex-1 truncate text-sm" style={{ fontWeight: isCurrent ? 600 : 400 }}>
                   {t.title}
                 </span>
-                <span className="shrink-0 text-xs tabular-nums" style={{ opacity: 0.6 }}>
+                {/* Room on the right so the remove button doesn't cover the time. */}
+                <span className="shrink-0 pr-6 text-xs tabular-nums" style={{ opacity: 0.6 }}>
                   {formatTime(t.duration)}
                 </span>
               </button>
+              {/* Remove control — a sibling of the row (not nested, which would
+                  be invalid), revealed on hover at the row's right edge. */}
+              {hoverIndex === i && dragIndex === null && (
+                <button
+                  type="button"
+                  onClick={() => onRemove(i)}
+                  aria-label="Remove from queue"
+                  className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded transition-opacity hover:opacity-100"
+                  style={{ color, opacity: 0.7 }}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </li>
           );
         })}

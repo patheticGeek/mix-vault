@@ -54,6 +54,9 @@ interface PlayerContextValue {
   // Drop a track from the queue by id — used when a track is deleted. If it's
   // the one currently playing, playback moves on to the next surviving track.
   removeFromQueue: (id: string) => void;
+  // Empty the queue and stop playback entirely, returning to the "nothing
+  // playing" state.
+  clearQueue: () => void;
   // Advance to the next / previous track in the queue (no-op at the ends).
   next: () => void;
   prev: () => void;
@@ -444,6 +447,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     [reconcileQueue],
   );
 
+  // Wipe the queue and stop, dropping any pending restore-seek so it can't
+  // reapply to a track that's no longer playing.
+  const clearQueue = useCallback(() => {
+    pendingSeekRef.current = null;
+    currentTimeRef.current = 0;
+    setCurrentTrack(null);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    commitQueue([]);
+  }, [commitQueue]);
+
   // Once the restored session is in place, confirm its tracks still exist on
   // the server and drop any deleted since we last saved. Runs in the
   // background so it never delays resuming playback, and leaves the queue
@@ -615,12 +629,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       playNext,
       reorderQueue,
       removeFromQueue,
+      clearQueue,
       next,
       prev,
       setVisible,
       discard,
     }),
-    [currentTrack, isPlaying, currentTime, isBuffering, volume, isCurrentVisible, queue, queueIndex, hasNext, hasPrev, play, pause, toggle, seek, setVolume, playQueue, playAt, addToQueue, playNext, reorderQueue, removeFromQueue, next, prev, setVisible, discard],
+    [currentTrack, isPlaying, currentTime, isBuffering, volume, isCurrentVisible, queue, queueIndex, hasNext, hasPrev, play, pause, toggle, seek, setVolume, playQueue, playAt, addToQueue, playNext, reorderQueue, removeFromQueue, clearQueue, next, prev, setVisible, discard],
   );
 
   return (
