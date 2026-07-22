@@ -1,6 +1,7 @@
 "use client";
 
 import { CopyLinkButton } from "@/components/CopyLinkButton";
+import { EnqueueMenu } from "@/components/EnqueueMenu";
 import { usePlayer } from "@/components/PlayerProvider";
 import { Waveform } from "@/components/Waveform";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
@@ -146,6 +147,9 @@ export function TrackListItem({
             );
           })}
         </div>
+      )}
+      {id !== undefined && (
+        <EnqueueMenu track={{ id, slug, title, audioSrc, artworkSrc, duration, peaks }} />
       )}
       {slug && <CopyLinkButton slug={slug} />}
     </div>

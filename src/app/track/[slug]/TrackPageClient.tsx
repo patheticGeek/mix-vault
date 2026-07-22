@@ -1,6 +1,7 @@
 "use client";
 
 import { CopyLinkButton } from "@/components/CopyLinkButton";
+import { EnqueueMenu } from "@/components/EnqueueMenu";
 import { usePlayer } from "@/components/PlayerProvider";
 import { Waveform } from "@/components/Waveform";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
@@ -50,11 +51,13 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
     toggle(playerTrackFor(track));
   }
 
-  // The Magic button starts this track (so it becomes the "now playing" one)
-  // and jumps to the full-page /player, which only ever shows what's playing.
+  // The Magic button opens the full-page /player. If this track is already
+  // the one playing, leave the queue alone (so a queue you've built survives
+  // opening the player); otherwise start it — which, per the queue rules,
+  // makes it a fresh queue of one.
   function openMagicPlayer() {
     if (!track) return;
-    play(playerTrackFor(track));
+    if (currentTrack?.id !== track.id) play(playerTrackFor(track));
     router.push("/player");
   }
 
@@ -127,6 +130,7 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
         <Sparkles className="w-4 h-4" />
         Magic
       </button>
+      <EnqueueMenu track={playerTrackFor(track)} showLabel />
       <CopyLinkButton slug={track.slug} showLabel />
       {TRACK_LINK_KEYS.filter((key) => track.links[key]).map((key) => {
         const Icon = TRACK_LINK_ICONS[key];

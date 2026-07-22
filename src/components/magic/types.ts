@@ -22,6 +22,26 @@ export interface MagicQueueItem {
   duration: number;
 }
 
+// A small palette each skin exposes so the shared player chrome — the queue
+// panel and the skin selector — can render in that skin's look instead of a
+// single neutral style. Values are raw CSS, so gradients and rgba() are fine.
+export interface SkinTheme {
+  // font-family applied across the chrome.
+  fontFamily: string;
+  // Panel background (color or gradient).
+  surface: string;
+  // Full CSS `border` shorthand for panels/rows.
+  border: string;
+  // Primary and secondary text colors.
+  text: string;
+  textMuted: string;
+  // Highlight color for the active row / selected option, and text on it.
+  accent: string;
+  accentText: string;
+  // border-radius for panels.
+  radius: string;
+}
+
 export interface WinampSkinProps {
   track: MagicSkinTrack;
 
@@ -40,17 +60,6 @@ export interface WinampSkinProps {
   // (e.g. fall back to a flat bar or a fake animated visualizer).
   peaks: number[];
 
-  // --- Queue / playlist ---
-  // The ordered list of tracks playback moves through. May be empty. Skins
-  // are free to ignore this and just render the now-playing `track`, or to
-  // draw a Winamp-style playlist from it.
-  queue: MagicQueueItem[];
-  // Index of the now-playing track within `queue`, or -1 if it isn't in it.
-  currentIndex: number;
-  // Whether there's a track after / before the current one to move to.
-  hasNext: boolean;
-  hasPrev: boolean;
-
   // --- Controls (all no-argument-safe to call) ---
   // Play if paused, pause if playing.
   onTogglePlay: () => void;
@@ -58,11 +67,6 @@ export interface WinampSkinProps {
   onSeek: (fraction: number) => void;
   // Set output volume, 0..1.
   onVolumeChange: (volume: number) => void;
-  // Move to the next / previous queued track (no-op at the ends).
-  onNext: () => void;
-  onPrev: () => void;
-  // Jump to and play the queue item at the given index.
-  onSelectTrack: (index: number) => void;
 
   // --- Helpers ---
   // Formats a seconds value as "m:ss" (e.g. 75 -> "1:15"). Returns "--:--"
@@ -77,6 +81,8 @@ export interface MagicSkin {
   name: string;
   // Optional one-line flavor text for the switcher.
   description?: string;
+  // Palette the shared queue panel + skin selector render themselves in.
+  theme: SkinTheme;
   // The skin component itself.
   Component: React.ComponentType<WinampSkinProps>;
 }
