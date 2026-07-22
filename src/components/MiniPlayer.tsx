@@ -17,7 +17,11 @@ const TRANSITION_MS = 300;
 // playback that's still going stays reachable from anywhere in the app.
 export function MiniPlayer() {
   const { currentTrack, isPlaying, currentTime, isBuffering, isCurrentVisible, toggle } = usePlayer();
-  const shouldShow = !!currentTrack && !isCurrentVisible;
+  const pathname = usePathname();
+  // The magic player is its own full-screen player, so the floating mini
+  // player would just be a redundant duplicate there — suppress it.
+  const onMagicPage = pathname?.startsWith("/magic/") ?? false;
+  const shouldShow = !!currentTrack && !isCurrentVisible && !onMagicPage;
 
   // Stay mounted for one extra transition cycle after shouldShow goes false
   // so the exit animation can play instead of the player just vanishing.

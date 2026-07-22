@@ -10,7 +10,7 @@ import { assetUrl } from "@/lib/cdn";
 import { formatDuration, timeAgo } from "@/lib/time";
 import { TRACK_LINK_KEYS } from "@/lib/trackLinks";
 import { parsePeaks } from "@/lib/waveform";
-import { ArrowLeft, Loader2, Pause, Play } from "lucide-react";
+import { ArrowLeft, Loader2, Pause, Play, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRef } from "react";
 
@@ -108,6 +108,10 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
 
   const linksRow = track && (
     <div className="flex flex-col items-start self-start gap-1">
+      <Link href={`/magic/${track.slug}`} className="btn btn-ghost btn-xs gap-1">
+        <Sparkles className="w-4 h-4" />
+        Magic
+      </Link>
       <CopyLinkButton slug={track.slug} showLabel />
       {TRACK_LINK_KEYS.filter((key) => track.links[key]).map((key) => {
         const Icon = TRACK_LINK_ICONS[key];
