@@ -6,11 +6,11 @@ import { usePlayer } from "@/components/PlayerProvider";
 import { Waveform } from "@/components/Waveform";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
 import { useTrackBySlug, type TrackBySlugResponse } from "@/hooks/queries/useTrackBySlug";
+import { useWaveform } from "@/hooks/queries/useWaveform";
 import { useTrackVisibility } from "@/hooks/useTrackVisibility";
 import { assetUrl } from "@/lib/cdn";
 import { formatDuration, timeAgo } from "@/lib/time";
 import { TRACK_LINK_KEYS } from "@/lib/trackLinks";
-import { parsePeaks } from "@/lib/waveform";
 import { ArrowLeft, Loader2, Pause, Play } from "lucide-react";
 import Link from "next/link";
 import { useRef } from "react";
@@ -32,6 +32,10 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
   const mainRef = useRef<HTMLElement>(null);
   useTrackVisibility(track?.id, mainRef);
 
+  // Waveform peaks come from their own call now — the track fetch no longer
+  // carries them.
+  const { data: peaks = [] } = useWaveform(track?.id);
+
   function playerTrackFor(t: NonNullable<typeof track>) {
     return {
       id: t.id,
@@ -40,7 +44,6 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
       audioSrc: assetUrl(t.audioFile),
       artworkSrc: assetUrl(t.artworkFile),
       duration: t.duration,
-      peaks: parsePeaks(t.waveformPreview),
     };
   }
 
@@ -95,7 +98,7 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
   const waveform = track && (
     <div className="relative w-full">
       <Waveform
-        peaks={parsePeaks(track.waveformPreview)}
+        peaks={peaks}
         progress={track.duration ? currentTime / track.duration : 0}
         onSeek={isCurrent ? seek : undefined}
       />

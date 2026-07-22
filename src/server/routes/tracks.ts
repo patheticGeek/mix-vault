@@ -1,7 +1,7 @@
 import { requireAuth } from "@/lib/auth/session";
 import { sha256Hex } from "@/lib/contentHash";
 import { getDb, tracks } from "@/lib/db";
-import { normalizeTrackRow } from "@/lib/db/schema";
+import { normalizeTrackRow, normalizeTrackSummary } from "@/lib/db/schema";
 import { ensureUniqueSlug } from "@/lib/slug";
 import { parseTrackLinks } from "@/lib/trackLinks";
 import { trackAssetKey } from "@/lib/trackAssetKey";
@@ -59,25 +59,58 @@ const updateTrackSchema = z.object({
     .transform((value) => (value ? new Date(value) : null)),
 });
 
+// The lightweight columns the list endpoint returns — everything except the
+// heavy `description` and `waveformPreview`, which are fetched per-track.
+const summaryColumns = {
+  id: tracks.id,
+  title: tracks.title,
+  tags: tracks.tags,
+  audioFile: tracks.audioFile,
+  artworkFile: tracks.artworkFile,
+  duration: tracks.duration,
+  slug: tracks.slug,
+  links: tracks.links,
+  recordedAt: tracks.recordedAt,
+  createdAt: tracks.createdAt,
+} as const;
+
+// The single-track columns: the summary plus `description`, but still without
+// `waveformPreview` (served on its own by the /:id/waveform route).
+const detailColumns = {
+  ...summaryColumns,
+  description: tracks.description,
+} as const;
+
 export const tracksRouter = new Hono()
   .get("/", async (c) => {
     const db = getDb();
-    const rows = await db.select().from(tracks).orderBy(desc(tracks.createdAt));
-    return c.json(rows.map(normalizeTrackRow));
+    const rows = await db.select(summaryColumns).from(tracks).orderBy(desc(tracks.createdAt));
+    return c.json(rows.map(normalizeTrackSummary));
   })
   .get("/slug/:slug", async (c) => {
     const slug = c.req.param("slug");
     const db = getDb();
-    const [row] = await db.select().from(tracks).where(eq(tracks.slug, slug)).limit(1);
+    const [row] = await db.select(detailColumns).from(tracks).where(eq(tracks.slug, slug)).limit(1);
     if (!row) return c.json({ error: "Track not found" }, 404);
     return c.json(normalizeTrackRow(row));
   })
   .get("/:id", async (c) => {
     const id = c.req.param("id");
     const db = getDb();
-    const [row] = await db.select().from(tracks).where(eq(tracks.id, id)).limit(1);
+    const [row] = await db.select(detailColumns).from(tracks).where(eq(tracks.id, id)).limit(1);
     if (!row) return c.json({ error: "Track not found" }, 404);
     return c.json(normalizeTrackRow(row));
+  })
+  .get("/:id/waveform", async (c) => {
+    const id = c.req.param("id");
+    const db = getDb();
+    const [row] = await db
+      .select({ waveformPreview: tracks.waveformPreview })
+      .from(tracks)
+      .where(eq(tracks.id, id))
+      .limit(1);
+    if (!row) return c.json({ error: "Track not found" }, 404);
+    return c.json({ waveformPreview: row.waveformPreview });
   })
   .post(
     "/",

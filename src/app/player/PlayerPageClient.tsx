@@ -5,11 +5,12 @@ import { QueuePanel, type QueuePanelItem } from "@/components/magic/QueuePanel";
 import { SkinSelector } from "@/components/magic/SkinSelector";
 import { DEFAULT_SKIN_ID, SKINS, getSkin } from "@/components/magic/skins";
 import { useListTracks } from "@/hooks/queries/useListTracks";
+import { useWaveform } from "@/hooks/queries/useWaveform";
 import { assetUrl } from "@/lib/cdn";
 import { formatDuration } from "@/lib/time";
-import { parsePeaks } from "@/lib/waveform";
 import { ArrowLeft, ListMusic, Play } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const SKIN_STORAGE_KEY = "mix-vault:magic-skin";
@@ -40,6 +41,14 @@ export function PlayerPageClient() {
     prev,
   } = usePlayer();
 
+  const router = useRouter();
+  // Go back to wherever the user came from. Falls back to the homepage when
+  // /player was opened directly (no in-app history to return to).
+  const handleBack = useCallback(() => {
+    if (window.history.length > 1) router.back();
+    else router.push("/");
+  }, [router]);
+
   // The full track list, only needed for the "play all" affordance shown
   // when nothing is queued yet.
   const { data: tracks } = useListTracks();
@@ -52,7 +61,6 @@ export function PlayerPageClient() {
         audioSrc: assetUrl(t.audioFile),
         artworkSrc: assetUrl(t.artworkFile),
         duration: t.duration,
-        peaks: parsePeaks(t.waveformPreview),
       })),
     [tracks],
   );
@@ -79,6 +87,10 @@ export function PlayerPageClient() {
   const onTogglePlay = useCallback(() => {
     if (currentTrack) toggle(currentTrack);
   }, [currentTrack, toggle]);
+
+  // The queue no longer carries peaks, so fetch the waveform for whatever's
+  // playing to feed the skin's visualizer.
+  const { data: peaks = [] } = useWaveform(currentTrack?.id);
 
   const queueItems = useMemo<QueuePanelItem[]>(
     () =>
@@ -128,7 +140,7 @@ export function PlayerPageClient() {
             currentTime={currentTime}
             progress={progress}
             volume={volume}
-            peaks={currentTrack.peaks ?? []}
+            peaks={peaks}
             onTogglePlay={onTogglePlay}
             onSeek={seek}
             onVolumeChange={setVolume}
@@ -179,15 +191,15 @@ export function PlayerPageClient() {
         </div>
       )}
 
-      {/* Subtle escape hatch — back to the current track's page when we know
-          it, otherwise to the homepage. */}
-      <Link
-        href={currentTrack?.slug ? `/track/${currentTrack.slug}` : "/"}
+      {/* Subtle escape hatch — back to whatever page the user came from. */}
+      <button
+        type="button"
+        onClick={handleBack}
         className="fixed top-4 left-4 z-20 flex items-center gap-1 text-xs text-white/50 hover:text-white/90 transition-colors"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Back
-      </Link>
+      </button>
     </div>
   );
 }

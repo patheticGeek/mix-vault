@@ -3,14 +3,17 @@ import { sql } from "drizzle-orm";
 import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 
-export const trackSchema = z.object({
+// Fields shared by every track representation the API returns. It
+// deliberately omits `description` and `waveformPreview` — both are heavy, so
+// the list endpoint returns only these lightweight fields, the single-track
+// endpoints add `description`, and the waveform is fetched on its own (see the
+// /:id/waveform route).
+const trackBaseSchema = z.object({
   id: z.string(),
   title: z.string(),
-  description: z.string(),
   tags: z.array(z.string()),
   audioFile: z.string(),
   artworkFile: z.string(),
-  waveformPreview: z.string(),
   duration: z.number(),
   slug: z.string(),
   links: z.record(z.string(), z.string()),
@@ -18,13 +21,31 @@ export const trackSchema = z.object({
   createdAt: z.date(),
 });
 
+// The lightweight "summary" shape returned by the track list endpoint.
+export const trackSummarySchema = trackBaseSchema;
+export type TrackSummary = z.infer<typeof trackSummarySchema>;
+
+// The single-track shape: the summary plus the description. Still no waveform
+// (that's a separate call).
+export const trackSchema = trackBaseSchema.extend({
+  description: z.string(),
+});
 export type Track = z.infer<typeof trackSchema>;
 
-export function normalizeTrackRow(raw: unknown): Track {
+function toDate(value: unknown): Date | null {
+  if (value instanceof Date) return value;
+  if (typeof value === "number" || typeof value === "string") return new Date(value);
+  return null;
+}
+
+// Shared coercion of the raw DB row (JSON-string tags/links, epoch/ISO dates)
+// into the normalized field values every track shape uses. The caller's
+// zod schema then strips any columns that shape doesn't include.
+function normalizeCommon(raw: unknown): Record<string, unknown> {
   const row = raw as Record<string, unknown>;
   const tagsValue = row.tags;
 
-  return trackSchema.parse({
+  return {
     ...row,
     tags:
       typeof tagsValue === "string"
@@ -33,23 +54,17 @@ export function normalizeTrackRow(raw: unknown): Track {
           ? tagsValue
           : [],
     links: parseTrackLinks(row.links),
-    createdAt:
-      row.createdAt instanceof Date
-        ? row.createdAt
-        : typeof row.createdAt === "number"
-          ? new Date(row.createdAt)
-          : typeof row.createdAt === "string"
-            ? new Date(row.createdAt)
-            : new Date(),
-    recordedAt:
-      row.recordedAt instanceof Date
-        ? row.recordedAt
-        : typeof row.recordedAt === "number"
-          ? new Date(row.recordedAt)
-          : typeof row.recordedAt === "string"
-            ? new Date(row.recordedAt)
-            : null,
-  });
+    createdAt: toDate(row.createdAt) ?? new Date(),
+    recordedAt: toDate(row.recordedAt),
+  };
+}
+
+export function normalizeTrackSummary(raw: unknown): TrackSummary {
+  return trackSummarySchema.parse(normalizeCommon(raw));
+}
+
+export function normalizeTrackRow(raw: unknown): Track {
+  return trackSchema.parse(normalizeCommon(raw));
 }
 
 export const tracks = sqliteTable(
