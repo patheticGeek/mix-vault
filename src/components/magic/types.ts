@@ -15,6 +15,33 @@ export interface MagicSkinTrack {
   duration: number;
 }
 
+export interface MagicQueueItem {
+  id: string;
+  title: string;
+  artworkSrc: string;
+  duration: number;
+}
+
+// A small palette each skin exposes so the shared player chrome — the queue
+// panel and the skin selector — can render in that skin's look instead of a
+// single neutral style. Values are raw CSS, so gradients and rgba() are fine.
+export interface SkinTheme {
+  // font-family applied across the chrome.
+  fontFamily: string;
+  // Panel background (color or gradient).
+  surface: string;
+  // Full CSS `border` shorthand for panels/rows.
+  border: string;
+  // Primary and secondary text colors.
+  text: string;
+  textMuted: string;
+  // Highlight color for the active row / selected option, and text on it.
+  accent: string;
+  accentText: string;
+  // border-radius for panels.
+  radius: string;
+}
+
 export interface WinampSkinProps {
   track: MagicSkinTrack;
 
@@ -54,6 +81,8 @@ export interface MagicSkin {
   name: string;
   // Optional one-line flavor text for the switcher.
   description?: string;
+  // Palette the shared queue panel + skin selector render themselves in.
+  theme: SkinTheme;
   // The skin component itself.
   Component: React.ComponentType<WinampSkinProps>;
 }

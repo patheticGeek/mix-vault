@@ -1,6 +1,7 @@
 "use client";
 
 import { CopyLinkButton } from "@/components/CopyLinkButton";
+import { EnqueueMenu } from "@/components/EnqueueMenu";
 import { usePlayer } from "@/components/PlayerProvider";
 import { Waveform } from "@/components/Waveform";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
@@ -10,7 +11,7 @@ import { assetUrl } from "@/lib/cdn";
 import { formatDuration, timeAgo } from "@/lib/time";
 import { TRACK_LINK_KEYS } from "@/lib/trackLinks";
 import { parsePeaks } from "@/lib/waveform";
-import { ArrowLeft, Loader2, Pause, Play, Sparkles } from "lucide-react";
+import { ArrowLeft, Loader2, Pause, Play } from "lucide-react";
 import Link from "next/link";
 import { useRef } from "react";
 
@@ -31,16 +32,21 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
   const mainRef = useRef<HTMLElement>(null);
   useTrackVisibility(track?.id, mainRef);
 
+  function playerTrackFor(t: NonNullable<typeof track>) {
+    return {
+      id: t.id,
+      slug: t.slug,
+      title: t.title,
+      audioSrc: assetUrl(t.audioFile),
+      artworkSrc: assetUrl(t.artworkFile),
+      duration: t.duration,
+      peaks: parsePeaks(t.waveformPreview),
+    };
+  }
+
   function togglePlay() {
     if (!track) return;
-    toggle({
-      id: track.id,
-      slug: track.slug,
-      title: track.title,
-      audioSrc: assetUrl(track.audioFile),
-      artworkSrc: assetUrl(track.artworkFile),
-      duration: track.duration,
-    });
+    toggle(playerTrackFor(track));
   }
 
   const artwork = track && (
@@ -108,10 +114,7 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
 
   const linksRow = track && (
     <div className="flex flex-col items-start self-start gap-1">
-      <Link href={`/magic/${track.slug}`} className="btn btn-ghost btn-xs gap-1">
-        <Sparkles className="w-4 h-4" />
-        Magic
-      </Link>
+      <EnqueueMenu track={playerTrackFor(track)} showLabel />
       <CopyLinkButton slug={track.slug} showLabel />
       {TRACK_LINK_KEYS.filter((key) => track.links[key]).map((key) => {
         const Icon = TRACK_LINK_ICONS[key];
