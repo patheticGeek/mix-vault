@@ -10,6 +10,7 @@ import { formatDuration } from "@/lib/time";
 import { TRACK_LINK_KEYS, type TrackLinks } from "@/lib/trackLinks";
 import { Loader2, Pause, Play } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 // Tracks whether the page's #hash currently points at this slug, so a
@@ -90,6 +91,13 @@ export function TrackListItem({
 
   const itemRef = useRef<HTMLLIElement>(null);
   useTrackVisibility(id, itemRef);
+  const router = useRouter();
+
+  // Clicking anywhere on the card that isn't an interactive control opens the
+  // track page. The interactive clusters below (artwork/play, links, and the
+  // waveform while it's seekable) stop propagation so they don't trigger this.
+  const openTrack = slug ? () => router.push(`/track/${slug}`) : undefined;
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
 
   const isHashTarget = useIsHashTarget(slug);
   const hashFlash = useHashFlash(isHashTarget);
@@ -102,7 +110,7 @@ export function TrackListItem({
   }
 
   const artwork = (
-    <div className="relative aspect-square w-24 shrink-0 self-start rounded overflow-hidden bg-base-300">
+    <div onClick={stop} className="relative aspect-square w-24 shrink-0 self-start rounded overflow-hidden bg-base-300">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
       <button
@@ -127,7 +135,7 @@ export function TrackListItem({
   );
 
   const linksButtons = (
-    <div className="flex items-center">
+    <div onClick={stop} className="flex items-center">
       {links && TRACK_LINK_KEYS.some((key) => links[key]) && (
         <div className="flex items-center">
           {TRACK_LINK_KEYS.filter((key) => links[key]).map((key) => {
@@ -187,7 +195,9 @@ export function TrackListItem({
   );
 
   const waveform = (
-    <div className="relative">
+    // Only swallow the card click while the waveform is actually seekable
+    // (this is the current track); otherwise a click should open the track.
+    <div className="relative" onClick={isCurrent ? stop : undefined}>
       <Waveform peaks={peaks} progress={duration ? currentTime / duration : 0} onSeek={isCurrent ? seek : undefined} />
       <span className="absolute bottom-0.5 left-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
         {formatDuration(currentTime)}
@@ -208,8 +218,11 @@ export function TrackListItem({
   // actual flex item.
   function titleEl(className: string) {
     const heading = <h3 className={className}>{title}</h3>;
+    // Kept as a real anchor (accessible, middle-clickable) even though the
+    // whole card is clickable; stop propagation so it doesn't double-fire the
+    // card's own navigation.
     return slug ? (
-      <Link href={`/track/${slug}`} className="contents">
+      <Link href={`/track/${slug}`} onClick={stop} className="contents">
         {heading}
       </Link>
     ) : (
@@ -221,7 +234,10 @@ export function TrackListItem({
     <li
       ref={itemRef}
       id={slug}
+      onClick={openTrack}
       className={`flex flex-col gap-3 p-4 rounded-box transition-colors duration-500 ${
+        openTrack ? "cursor-pointer" : ""
+      } ${
         isPlaying || isLastPlayed
           ? "ring-1 ring-zinc-600"
           : isHashTarget && !hasClickedPlay

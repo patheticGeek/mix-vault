@@ -11,9 +11,8 @@ import { assetUrl } from "@/lib/cdn";
 import { formatDuration, timeAgo } from "@/lib/time";
 import { TRACK_LINK_KEYS } from "@/lib/trackLinks";
 import { parsePeaks } from "@/lib/waveform";
-import { ArrowLeft, Loader2, Pause, Play, Sparkles } from "lucide-react";
+import { ArrowLeft, Loader2, Pause, Play } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useRef } from "react";
 
 interface TrackPageClientProps {
@@ -23,8 +22,7 @@ interface TrackPageClientProps {
 
 export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
   const { data: track, isLoading, error } = useTrackBySlug(slug, initialTrack);
-  const { currentTrack, isPlaying: playerIsPlaying, currentTime: playerCurrentTime, isBuffering: playerIsBuffering, toggle, play, seek } = usePlayer();
-  const router = useRouter();
+  const { currentTrack, isPlaying: playerIsPlaying, currentTime: playerCurrentTime, isBuffering: playerIsBuffering, toggle, seek } = usePlayer();
 
   const isCurrent = Boolean(track) && currentTrack?.id === track?.id;
   const isPlaying = isCurrent && playerIsPlaying;
@@ -49,16 +47,6 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
   function togglePlay() {
     if (!track) return;
     toggle(playerTrackFor(track));
-  }
-
-  // The Magic button opens the full-page /player. If this track is already
-  // the one playing, leave the queue alone (so a queue you've built survives
-  // opening the player); otherwise start it — which, per the queue rules,
-  // makes it a fresh queue of one.
-  function openMagicPlayer() {
-    if (!track) return;
-    if (currentTrack?.id !== track.id) play(playerTrackFor(track));
-    router.push("/player");
   }
 
   const artwork = track && (
@@ -126,10 +114,6 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
 
   const linksRow = track && (
     <div className="flex flex-col items-start self-start gap-1">
-      <button type="button" onClick={openMagicPlayer} className="btn btn-ghost btn-xs gap-1">
-        <Sparkles className="w-4 h-4" />
-        Magic
-      </button>
       <EnqueueMenu track={playerTrackFor(track)} showLabel />
       <CopyLinkButton slug={track.slug} showLabel />
       {TRACK_LINK_KEYS.filter((key) => track.links[key]).map((key) => {
