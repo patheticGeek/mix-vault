@@ -10,6 +10,7 @@ import { assetUrl } from "@/lib/cdn";
 import { formatDuration } from "@/lib/time";
 import { ArrowLeft, ListMusic, Play } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const SKIN_STORAGE_KEY = "mix-vault:magic-skin";
@@ -39,6 +40,14 @@ export function PlayerPageClient() {
     next,
     prev,
   } = usePlayer();
+
+  const router = useRouter();
+  // Go back to wherever the user came from. Falls back to the homepage when
+  // /player was opened directly (no in-app history to return to).
+  const handleBack = useCallback(() => {
+    if (window.history.length > 1) router.back();
+    else router.push("/");
+  }, [router]);
 
   // The full track list, only needed for the "play all" affordance shown
   // when nothing is queued yet.
@@ -182,15 +191,15 @@ export function PlayerPageClient() {
         </div>
       )}
 
-      {/* Subtle escape hatch — back to the current track's page when we know
-          it, otherwise to the homepage. */}
-      <Link
-        href={currentTrack?.slug ? `/track/${currentTrack.slug}` : "/"}
+      {/* Subtle escape hatch — back to whatever page the user came from. */}
+      <button
+        type="button"
+        onClick={handleBack}
         className="fixed top-4 left-4 z-20 flex items-center gap-1 text-xs text-white/50 hover:text-white/90 transition-colors"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Back
-      </Link>
+      </button>
     </div>
   );
 }
