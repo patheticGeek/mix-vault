@@ -2,3 +2,8 @@
 # https://opennext.js.org/cloudflare/caching#static-assets-caching
 /_next/static/*
   Cache-Control: public,max-age=31536000,immutable
+
+# The service worker must not be served stale, or clients get stuck on an old
+# shell-caching policy. Revalidate every load; the SW file itself is tiny.
+/sw.js
+  Cache-Control: no-cache

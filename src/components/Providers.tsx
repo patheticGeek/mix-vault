@@ -1,6 +1,7 @@
 "use client";
 
 import { MiniPlayer } from "@/components/MiniPlayer";
+import { RegisterServiceWorker } from "@/components/offline/RegisterServiceWorker";
 import { PlayerProvider } from "@/components/PlayerProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
@@ -26,6 +27,7 @@ export default function Providers({
 
   return (
     <QueryClientProvider client={queryClient}>
+      <RegisterServiceWorker />
       <PlayerProvider>
         {children}
         <MiniPlayer />
