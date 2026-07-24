@@ -2,6 +2,7 @@
 
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { EnqueueMenu } from "@/components/EnqueueMenu";
+import { DownloadButton } from "@/components/offline/DownloadButton";
 import { usePlayer } from "@/components/PlayerProvider";
 import { Waveform } from "@/components/Waveform";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
@@ -161,6 +162,9 @@ export function TrackListItem({
       )}
       {id !== undefined && (
         <EnqueueMenu track={{ id, slug, title, audioSrc, artworkSrc, duration }} />
+      )}
+      {id !== undefined && (
+        <DownloadButton track={{ id, slug, title, audioSrc, artworkSrc, duration }} />
       )}
       {slug && <CopyLinkButton slug={slug} />}
     </div>
