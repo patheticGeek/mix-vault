@@ -20,6 +20,11 @@ export function HomeClient({ initialTracks }: HomeClientProps) {
   const { data: tracks, isLoading, error } = useListTracks();
   const { currentTrack } = usePlayer();
   const online = useOnlineStatus();
+  // navigator.onLine only reports whether a network interface exists, not
+  // whether the server is actually reachable — so also treat a failed track
+  // fetch (with nothing to show) as offline. This is what makes a refresh
+  // while offline land on the downloaded-only view instead of an empty list.
+  const isOffline = !online || (Boolean(error) && !tracks);
   // The download index doubles as the "which tracks are available offline"
   // signal; changes to it (a new download completing) re-run the loader below.
   const { states } = useOffline();
@@ -43,7 +48,7 @@ export function HomeClient({ initialTracks }: HomeClientProps) {
     [states],
   );
   useEffect(() => {
-    if (online) return;
+    if (!isOffline) return;
     let cancelled = false;
     void listDownloads()
       .then((rows) => {
@@ -57,7 +62,7 @@ export function HomeClient({ initialTracks }: HomeClientProps) {
     return () => {
       cancelled = true;
     };
-  }, [online, doneKey]);
+  }, [isOffline, doneKey]);
 
   // Object URLs for the downloaded artwork, revoked as the set changes.
   const [artUrls, setArtUrls] = useState<Record<string, string>>({});
@@ -101,7 +106,7 @@ export function HomeClient({ initialTracks }: HomeClientProps) {
           )}
         </div>
 
-        {!online ? (
+        {isOffline ? (
           // Offline: only downloaded tracks are playable, so show just those.
           <>
             <div className="flex items-center gap-2 justify-center mb-6 text-sm text-warning">
@@ -115,6 +120,8 @@ export function HomeClient({ initialTracks }: HomeClientProps) {
             ) : (
               <ul className="flex flex-col gap-4">
                 {offlineRecords.map((record) => (
+                  // No slug is passed: offline there's no track page to link
+                  // to, so the title/card stay non-navigational.
                   <TrackListItem
                     key={record.trackId}
                     id={record.trackId}
@@ -124,7 +131,6 @@ export function HomeClient({ initialTracks }: HomeClientProps) {
                     audioSrc={record.audioSrc}
                     artworkSrc={artUrls[record.trackId] ?? record.artworkSrc}
                     timeLabel={timeAgo(new Date(record.downloadedAt))}
-                    slug={record.slug}
                     isLastPlayed={lastPlayedId === record.trackId}
                   />
                 ))}
