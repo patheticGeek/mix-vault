@@ -22,10 +22,6 @@ interface PlayerContextValue {
   // element. Exposed so richer players (like the magic skins) can offer a
   // volume slider; the default inline players just leave it at 1.
   volume: number;
-  // Whether the current track's own inline player (a list item or the track
-  // page hero) is on screen somewhere right now — see useTrackVisibility.
-  // The mini player only shows itself when this is false.
-  isCurrentVisible: boolean;
   // The ordered list of tracks playback advances through, and the position
   // of the current track within it (-1 when the current track isn't part of
   // the queue). Populated by the /player view; empty elsewhere.
@@ -61,7 +57,6 @@ interface PlayerContextValue {
   // Advance to the next / previous track in the queue (no-op at the ends).
   next: () => void;
   prev: () => void;
-  setVisible: (id: string, visible: boolean) => void;
   // Fully drops the current track rather than just pausing it, so nothing
   // is left for the mini player to pick up — for ephemeral playback (like a
   // track form's live preview) that shouldn't survive its page.
@@ -126,7 +121,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [isBuffering, setIsBuffering] = useState(false);
-  const [isCurrentVisible, setIsCurrentVisible] = useState(false);
   const [volume, setVolumeState] = useState(1);
   const [queue, setQueueState] = useState<PlayerTrack[]>([]);
   // When the current track has been downloaded, this holds a blob URL for its
@@ -144,7 +138,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // identity on every play/pause/time tick.
   const currentTrackRef = useRef<PlayerTrack | null>(null);
   const isPlayingRef = useRef(false);
-  const visibleIds = useRef<Set<string>>(new Set());
   const queueRef = useRef<PlayerTrack[]>([]);
   const currentTimeRef = useRef(0);
   // Time to seek to once the restored track's metadata has loaded — the
@@ -217,7 +210,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     currentTrackRef.current = currentTrack;
-    setIsCurrentVisible(currentTrack ? visibleIds.current.has(currentTrack.id) : false);
   }, [currentTrack]);
 
   useEffect(() => {
@@ -379,14 +371,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const time = fraction * track.duration;
     audio.currentTime = time;
     setCurrentTime(time);
-  }, []);
-
-  const setVisible = useCallback((id: string, visible: boolean) => {
-    if (visible) visibleIds.current.add(id);
-    else visibleIds.current.delete(id);
-    if (currentTrackRef.current?.id === id) {
-      setIsCurrentVisible(visibleIds.current.has(id));
-    }
   }, []);
 
   const discard = useCallback(
@@ -676,7 +660,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       currentTime,
       isBuffering,
       volume,
-      isCurrentVisible,
       queue,
       queueIndex,
       hasNext,
@@ -695,10 +678,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       clearQueue,
       next,
       prev,
-      setVisible,
       discard,
     }),
-    [currentTrack, isPlaying, currentTime, isBuffering, volume, isCurrentVisible, queue, queueIndex, hasNext, hasPrev, play, pause, toggle, seek, setVolume, playQueue, playAt, addToQueue, playNext, reorderQueue, removeFromQueue, clearQueue, next, prev, setVisible, discard],
+    [currentTrack, isPlaying, currentTime, isBuffering, volume, queue, queueIndex, hasNext, hasPrev, play, pause, toggle, seek, setVolume, playQueue, playAt, addToQueue, playNext, reorderQueue, removeFromQueue, clearQueue, next, prev, discard],
   );
 
   // Play the downloaded copy when this track's offline audio has resolved;

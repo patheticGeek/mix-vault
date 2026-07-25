@@ -6,7 +6,6 @@ import { Waveform } from "@/components/Waveform";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
 import { useCreateTrack } from "@/hooks/mutations/useCreateTrack";
 import { useDeleteTrack } from "@/hooks/mutations/useDeleteTrack";
-import { useTrackVisibility } from "@/hooks/useTrackVisibility";
 import { useUpdateTrack } from "@/hooks/mutations/useUpdateTrack";
 import type { TrackResponse } from "@/hooks/queries/useTrack";
 import { useWaveform } from "@/hooks/queries/useWaveform";
@@ -130,9 +129,6 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   const isPlaying = isCurrent && playerIsPlaying;
   const currentTime = isCurrent ? playerCurrentTime : 0;
   const isBuffering = isCurrent && playerIsBuffering;
-
-  const previewVisibilityRef = useRef<HTMLDivElement>(null);
-  useTrackVisibility(hasAudioPreview ? previewId : undefined, previewVisibilityRef);
 
   // The synthetic preview-only track (an unsaved track has no real id to
   // hand off to the homepage/mini player) shouldn't outlive this page — the
@@ -263,7 +259,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-      <div ref={previewVisibilityRef} className="flex gap-4">
+      <div className="flex gap-4">
         {hasAudioPreview ? (
           <div className="relative flex-1 min-w-0 h-24 rounded bg-base-300 overflow-hidden flex items-center px-3 gap-3">
             <button
