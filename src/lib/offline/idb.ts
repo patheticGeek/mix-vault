@@ -25,6 +25,10 @@ export interface DownloadRecord {
   slug?: string;
   duration: number;
   artworkBlob: Blob | null;
+  // The track's waveform peaks (the raw JSON string served by the waveform
+  // endpoint), stored so the bars still render offline. Null if it wasn't
+  // captured at download time.
+  waveformPreview: string | null;
   downloadedAt: number;
 }
 

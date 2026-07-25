@@ -17,6 +17,7 @@ import {
   isOpfsSupported,
   writeAudio,
 } from "@/lib/offline/opfs";
+import { parsePeaks } from "@/lib/waveform";
 
 // The subset of a track needed to download it — matches PlayerTrack, so a
 // PlayerTrack can be passed straight through.
@@ -62,6 +63,7 @@ export async function downloadTrack(
     mimeType: "",
     bytes: 0,
     artworkBlob: null,
+    waveformPreview: null,
     downloadedAt: Date.now(),
   }).catch(() => {
     // If even this fails, the download can still proceed — it just won't be
@@ -97,12 +99,25 @@ export async function downloadTrack(
     // leave artworkBlob null
   }
 
+  // Waveform peaks (same-origin) so the bars render offline. Also optional.
+  let waveformPreview: string | null = null;
+  try {
+    const wfRes = await fetch(`/api/tracks/${track.id}/waveform`);
+    if (wfRes.ok) {
+      const body = (await wfRes.json()) as { waveformPreview?: string };
+      waveformPreview = body.waveformPreview ?? null;
+    }
+  } catch {
+    // leave waveformPreview null
+  }
+
   const record: DownloadRecord = {
     ...base,
     status: "complete",
     mimeType,
     bytes,
     artworkBlob,
+    waveformPreview,
     downloadedAt: Date.now(),
   };
   try {
@@ -148,6 +163,14 @@ export async function getOfflineArtworkUrl(trackId: string): Promise<string | nu
   const record = await getDownload(trackId).catch(() => undefined);
   if (!record?.artworkBlob) return null;
   return URL.createObjectURL(record.artworkBlob);
+}
+
+// The downloaded waveform peaks, or null if this track isn't downloaded (or was
+// downloaded before waveforms were captured).
+export async function getOfflineWaveform(trackId: string): Promise<number[] | null> {
+  const record = await getDownload(trackId).catch(() => undefined);
+  if (!record?.waveformPreview) return null;
+  return parsePeaks(record.waveformPreview);
 }
 
 export async function estimateUsage(): Promise<{ usage: number; quota: number } | null> {
