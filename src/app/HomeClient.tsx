@@ -126,11 +126,12 @@ export function HomeClient({ initialTracks }: HomeClientProps) {
                     key={record.trackId}
                     id={record.trackId}
                     title={record.title}
-                    tags={[]}
+                    tags={record.tags ?? []}
                     duration={record.duration}
                     audioSrc={record.audioSrc}
                     artworkSrc={artUrls[record.trackId] ?? record.artworkSrc}
                     timeLabel={timeAgo(new Date(record.downloadedAt))}
+                    links={record.links}
                     isLastPlayed={lastPlayedId === record.trackId}
                   />
                 ))}

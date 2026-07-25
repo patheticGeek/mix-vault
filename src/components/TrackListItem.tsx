@@ -161,7 +161,7 @@ export function TrackListItem({
         <EnqueueMenu track={{ id, slug, title, audioSrc, artworkSrc, duration }} />
       )}
       {id !== undefined && (
-        <DownloadButton track={{ id, slug, title, audioSrc, artworkSrc, duration }} />
+        <DownloadButton track={{ id, slug, title, audioSrc, artworkSrc, duration, tags, links }} />
       )}
       {slug && <CopyLinkButton slug={slug} />}
     </div>

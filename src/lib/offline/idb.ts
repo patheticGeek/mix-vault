@@ -3,6 +3,8 @@
 // the artwork blob (artwork is tiny, so IndexedDB is a fine home for it and
 // keeps "list my downloads" a single store read).
 
+import type { TrackLinks } from "@/lib/trackLinks";
+
 const DB_NAME = "mix-vault-offline";
 const DB_VERSION = 1;
 const STORE = "downloads";
@@ -24,6 +26,9 @@ export interface DownloadRecord {
   title: string;
   slug?: string;
   duration: number;
+  // Enough of the track's metadata to render its list row offline.
+  tags: string[];
+  links: TrackLinks;
   artworkBlob: Blob | null;
   // The track's waveform peaks (the raw JSON string served by the waveform
   // endpoint), stored so the bars still render offline. Null if it wasn't

@@ -17,6 +17,7 @@ import {
   isOpfsSupported,
   writeAudio,
 } from "@/lib/offline/opfs";
+import type { TrackLinks } from "@/lib/trackLinks";
 import { parsePeaks } from "@/lib/waveform";
 
 // The subset of a track needed to download it — matches PlayerTrack, so a
@@ -28,6 +29,9 @@ export interface DownloadableTrack {
   duration: number;
   audioSrc: string;
   artworkSrc: string;
+  // Optional metadata captured so the offline list row still has tags/links.
+  tags?: string[];
+  links?: TrackLinks;
 }
 
 export function isOfflineSupported(): boolean {
@@ -52,6 +56,8 @@ export async function downloadTrack(
     title: track.title,
     slug: track.slug,
     duration: track.duration,
+    tags: track.tags ?? [],
+    links: track.links ?? {},
   };
 
   // Mark the download in-progress up front, so if the tab is closed mid-stream
