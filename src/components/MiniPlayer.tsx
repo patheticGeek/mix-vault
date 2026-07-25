@@ -16,14 +16,16 @@ const TRANSITION_MS = 300;
 // playback that's still going stays reachable from anywhere in the app.
 // Tapping it opens the full /player; the chevron expands it into the queue.
 export function MiniPlayer() {
-  const { currentTrack, isPlaying, currentTime, isBuffering, isCurrentVisible, queue, queueIndex, toggle, playAt } =
+  const { currentTrack, isPlaying, currentTime, isBuffering, queue, queueIndex, toggle, playAt } =
     usePlayer();
   const pathname = usePathname();
   const router = useRouter();
   // The /player page is its own full-screen player, so the floating mini
-  // player would just be a redundant duplicate there — suppress it.
+  // player would just be a redundant duplicate there — suppress it. Everywhere
+  // else it stays put whenever something's playing, even when the track's own
+  // inline player is on screen, so playback controls are always within reach.
   const onPlayerPage = pathname === "/player";
-  const shouldShow = !!currentTrack && !isCurrentVisible && !onPlayerPage;
+  const shouldShow = !!currentTrack && !onPlayerPage;
 
   // Stay mounted for one extra transition cycle after shouldShow goes false
   // so the exit animation can play instead of the player just vanishing.
