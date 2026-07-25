@@ -32,6 +32,7 @@ interface OfflineContextValue {
   states: Record<string, DownloadState>;
   download: (track: DownloadableTrack) => void;
   remove: (trackId: string) => void;
+  removeAll: () => void;
 }
 
 const OfflineContext = createContext<OfflineContextValue | null>(null);
@@ -129,9 +130,20 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     [setState],
   );
 
+  const removeAll = useCallback(() => {
+    setStates((prev) => {
+      for (const id of Object.keys(prev)) {
+        void removeDownload(id).catch(() => {
+          // Best-effort per track.
+        });
+      }
+      return {};
+    });
+  }, []);
+
   const value = useMemo<OfflineContextValue>(
-    () => ({ supported, states, download, remove }),
-    [supported, states, download, remove],
+    () => ({ supported, states, download, remove, removeAll }),
+    [supported, states, download, remove, removeAll],
   );
 
   return <OfflineContext.Provider value={value}>{children}</OfflineContext.Provider>;

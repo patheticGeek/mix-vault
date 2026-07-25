@@ -10,7 +10,7 @@ const CACHE_NAME = `mix-vault-shell-${CACHE_VERSION}`;
 
 // The minimum needed to boot the client app offline. Route HTML is cached at
 // runtime as it's visited; this just guarantees a shell to fall back to.
-const PRECACHE_URLS = ["/", "/player"];
+const PRECACHE_URLS = ["/", "/player", "/downloads"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
