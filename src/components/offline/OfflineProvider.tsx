@@ -3,7 +3,7 @@
 import {
   downloadTrack,
   isOfflineSupported,
-  listDownloaded,
+  listDownloadStates,
   removeDownload,
   type DownloadableTrack,
 } from "@/lib/offline/downloads";
@@ -17,7 +17,7 @@ import {
   useState,
 } from "react";
 
-export type DownloadStatus = "downloading" | "done" | "error";
+export type DownloadStatus = "downloading" | "done" | "error" | "partial";
 
 export interface DownloadState {
   status: DownloadStatus;
@@ -77,12 +77,17 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     setSupported(ok);
     if (!ok) return;
     let cancelled = false;
-    void listDownloaded()
-      .then((ids) => {
+    void listDownloadStates()
+      .then((entries) => {
         if (cancelled) return;
         setStates((prev) => {
           const next = { ...prev };
-          for (const id of ids) next[id] = { status: "done", progress: 1 };
+          for (const { id, status } of entries) {
+            next[id] =
+              status === "partial"
+                ? { status: "partial", progress: 0 }
+                : { status: "done", progress: 1 };
+          }
           return next;
         });
       })

@@ -10,6 +10,11 @@ const STORE = "downloads";
 export interface DownloadRecord {
   // Primary key; also the OPFS filename for the audio.
   trackId: string;
+  // "partial" is written when a download starts and only flipped to "complete"
+  // once the audio has fully streamed to disk, so a download interrupted by a
+  // tab close or crash is left detectably incomplete. (Legacy records with no
+  // status are treated as complete.)
+  status: "partial" | "complete";
   // The CDN audio URL at download time. If a track is re-uploaded its URL
   // (content hash) changes, so a mismatch flags the download as stale.
   audioSrc: string;

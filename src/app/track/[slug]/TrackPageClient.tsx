@@ -2,6 +2,7 @@
 
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { EnqueueMenu } from "@/components/EnqueueMenu";
+import { DownloadButton } from "@/components/offline/DownloadButton";
 import { usePlayer } from "@/components/PlayerProvider";
 import { Waveform } from "@/components/Waveform";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
@@ -113,6 +114,7 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
   const linksRow = track && (
     <div className="flex flex-col items-start self-start gap-1">
       <EnqueueMenu track={playerTrackFor(track)} showLabel align="start" />
+      <DownloadButton track={playerTrackFor(track)} showLabel />
       <CopyLinkButton slug={track.slug} showLabel />
       {TRACK_LINK_KEYS.filter((key) => track.links[key]).map((key) => {
         const Icon = TRACK_LINK_ICONS[key];
