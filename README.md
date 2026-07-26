@@ -2,6 +2,21 @@
 
 mix-vault is a self-hosted streaming platform for DJs and producers to upload their tracks and host mixes without relying on third-party services. It also provides an API so mixes can be pulled into a site as needed.
 
+## Features
+
+- Upload tracks to R2 (chunked) with cover art; waveforms are generated in the browser
+- One player shared across the whole app — a queue, a mini player, and a full-screen mode with a few skins
+- Lock-screen and media-key controls (Media Session)
+- Download tracks for offline listening — stored on-device (OPFS + IndexedDB), plays with no network
+- Installable as a PWA; offline the homepage falls back to your downloads
+- Read-only JSON API for embedding tracks elsewhere
+
+## Screenshots
+
+![Home](docs/screenshots/home.png)
+
+![Track page](docs/screenshots/track.png)
+
 ## Tech Stack
 
 - Next.js
