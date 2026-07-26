@@ -2,18 +2,17 @@
 
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { EnqueueMenu } from "@/components/EnqueueMenu";
+import { DownloadButton } from "@/components/offline/DownloadButton";
 import { usePlayer } from "@/components/PlayerProvider";
 import { Waveform } from "@/components/Waveform";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
 import { useTrackBySlug, type TrackBySlugResponse } from "@/hooks/queries/useTrackBySlug";
 import { useWaveform } from "@/hooks/queries/useWaveform";
-import { useTrackVisibility } from "@/hooks/useTrackVisibility";
 import { assetUrl } from "@/lib/cdn";
 import { formatDuration, timeAgo } from "@/lib/time";
 import { TRACK_LINK_KEYS } from "@/lib/trackLinks";
 import { ArrowLeft, Loader2, Pause, Play } from "lucide-react";
 import Link from "next/link";
-import { useRef } from "react";
 
 interface TrackPageClientProps {
   slug: string;
@@ -28,9 +27,6 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
   const isPlaying = isCurrent && playerIsPlaying;
   const currentTime = isCurrent ? playerCurrentTime : 0;
   const isBuffering = isCurrent && playerIsBuffering;
-
-  const mainRef = useRef<HTMLElement>(null);
-  useTrackVisibility(track?.id, mainRef);
 
   // Waveform peaks come from their own call now — the track fetch no longer
   // carries them.
@@ -118,6 +114,10 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
   const linksRow = track && (
     <div className="flex flex-col items-start self-start gap-1">
       <EnqueueMenu track={playerTrackFor(track)} showLabel align="start" />
+      <DownloadButton
+        track={{ ...playerTrackFor(track), tags: track.tags, links: track.links }}
+        showLabel
+      />
       <CopyLinkButton slug={track.slug} showLabel />
       {TRACK_LINK_KEYS.filter((key) => track.links[key]).map((key) => {
         const Icon = TRACK_LINK_ICONS[key];
@@ -139,7 +139,7 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
 
   return (
     <div className="bg-base-100 text-base-content min-h-[calc(100vh-4rem)]">
-      <main ref={mainRef} className="max-w-3xl mx-auto px-4 py-10">
+      <main className="max-w-3xl mx-auto px-4 py-10">
         <Link href="/" className="btn btn-ghost btn-sm gap-1 mb-8">
           <ArrowLeft className="w-4 h-4" />
           Back to all tracks

@@ -2,7 +2,7 @@
 
 import { AuthStatus } from "@/components/AuthStatus";
 import { APP_TITLE } from "@/config";
-import { AudioLines } from "lucide-react";
+import { AudioLines, Download } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -19,6 +19,14 @@ export function Navbar() {
         </Link>
       </div>
       <div className="navbar-end gap-1">
+        <Link
+          href="/downloads"
+          aria-label="Downloads"
+          title="Downloads"
+          className="btn btn-ghost btn-square normal-case"
+        >
+          <Download className="w-5 h-5" />
+        </Link>
         <Link
           href="/player"
           aria-label="Open player"

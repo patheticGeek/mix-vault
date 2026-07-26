@@ -29,6 +29,8 @@ export default function RootLayout({
     <html lang="en" data-theme="black">
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content="#000000" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-base-100 text-base-content`}

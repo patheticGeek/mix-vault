@@ -1,6 +1,7 @@
 "use client";
 
 import { apiClient } from "@/lib/api-client";
+import { getOfflineArtworkUrl, getOfflineAudioUrl } from "@/lib/offline/downloads";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 export interface PlayerTrack {
@@ -21,10 +22,6 @@ interface PlayerContextValue {
   // element. Exposed so richer players (like the magic skins) can offer a
   // volume slider; the default inline players just leave it at 1.
   volume: number;
-  // Whether the current track's own inline player (a list item or the track
-  // page hero) is on screen somewhere right now — see useTrackVisibility.
-  // The mini player only shows itself when this is false.
-  isCurrentVisible: boolean;
   // The ordered list of tracks playback advances through, and the position
   // of the current track within it (-1 when the current track isn't part of
   // the queue). Populated by the /player view; empty elsewhere.
@@ -60,7 +57,6 @@ interface PlayerContextValue {
   // Advance to the next / previous track in the queue (no-op at the ends).
   next: () => void;
   prev: () => void;
-  setVisible: (id: string, visible: boolean) => void;
   // Fully drops the current track rather than just pausing it, so nothing
   // is left for the mini player to pick up — for ephemeral playback (like a
   // track form's live preview) that shouldn't survive its page.
@@ -125,16 +121,23 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [isBuffering, setIsBuffering] = useState(false);
-  const [isCurrentVisible, setIsCurrentVisible] = useState(false);
   const [volume, setVolumeState] = useState(1);
   const [queue, setQueueState] = useState<PlayerTrack[]>([]);
+  // When the current track has been downloaded, this holds a blob URL for its
+  // OPFS audio (tagged with the track id it belongs to). The <audio> src falls
+  // back to the network URL whenever this doesn't match the current track.
+  const [resolvedAudio, setResolvedAudio] = useState<{ id: string; src: string } | null>(null);
+  // Object URLs currently handed to the element (audio + artwork), tracked so
+  // they can be revoked when the track changes or the provider unmounts.
+  const offlineUrlsRef = useRef<string[]>([]);
+  // The current track's offline artwork blob URL, read by applyMediaMetadata.
+  const offlineArtworkRef = useRef<{ id: string; url: string } | null>(null);
 
   // Mirror the latest track/playing state into refs so the callbacks below
   // can stay referentially stable (no deps on state) instead of changing
   // identity on every play/pause/time tick.
   const currentTrackRef = useRef<PlayerTrack | null>(null);
   const isPlayingRef = useRef(false);
-  const visibleIds = useRef<Set<string>>(new Set());
   const queueRef = useRef<PlayerTrack[]>([]);
   const currentTimeRef = useRef(0);
   // Time to seek to once the restored track's metadata has loaded — the
@@ -207,7 +210,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     currentTrackRef.current = currentTrack;
-    setIsCurrentVisible(currentTrack ? visibleIds.current.has(currentTrack.id) : false);
   }, [currentTrack]);
 
   useEffect(() => {
@@ -371,14 +373,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setCurrentTime(time);
   }, []);
 
-  const setVisible = useCallback((id: string, visible: boolean) => {
-    if (visible) visibleIds.current.add(id);
-    else visibleIds.current.delete(id);
-    if (currentTrackRef.current?.id === id) {
-      setIsCurrentVisible(visibleIds.current.has(id));
-    }
-  }, []);
-
   const discard = useCallback(
     (id: string) => {
       if (currentTrackRef.current?.id !== id) return;
@@ -508,9 +502,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       navigator.mediaSession.metadata = null;
       return;
     }
+    // Prefer the downloaded artwork blob so the lock screen has art offline.
+    const artworkSrc =
+      offlineArtworkRef.current?.id === track.id
+        ? offlineArtworkRef.current.url
+        : track.artworkSrc;
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.title,
-      artwork: track.artworkSrc ? [{ src: track.artworkSrc, sizes: "512x512" }] : [],
+      artwork: artworkSrc ? [{ src: artworkSrc, sizes: "512x512" }] : [],
     });
   }, []);
 
@@ -518,6 +517,54 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     applyMediaMetadata(currentTrack);
   }, [currentTrack, applyMediaMetadata]);
+
+  // Resolve the current track against offline storage. If it's been downloaded,
+  // swap in an OPFS blob URL for the audio and the stored artwork so playback
+  // (and the lock-screen art) work with no network; otherwise the <audio> src
+  // stays on the CDN URL. Blob URLs are revoked as tracks change so they can't
+  // leak, and the previous track's are only dropped once the new ones are ready.
+  useEffect(() => {
+    const track = currentTrack;
+    if (!track) {
+      for (const url of offlineUrlsRef.current) URL.revokeObjectURL(url);
+      offlineUrlsRef.current = [];
+      offlineArtworkRef.current = null;
+      setResolvedAudio(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const [audio, artwork] = await Promise.all([
+        getOfflineAudioUrl(track.id).catch(() => null),
+        getOfflineArtworkUrl(track.id).catch(() => null),
+      ]);
+      if (cancelled) {
+        if (audio) URL.revokeObjectURL(audio);
+        if (artwork) URL.revokeObjectURL(artwork);
+        return;
+      }
+      for (const url of offlineUrlsRef.current) URL.revokeObjectURL(url);
+      const created: string[] = [];
+      if (audio) created.push(audio);
+      if (artwork) created.push(artwork);
+      offlineUrlsRef.current = created;
+      offlineArtworkRef.current = artwork ? { id: track.id, url: artwork } : null;
+      setResolvedAudio(audio ? { id: track.id, src: audio } : null);
+      // Reassert metadata so the offline artwork replaces the network one.
+      applyMediaMetadata(track);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentTrack, applyMediaMetadata]);
+
+  // Revoke any outstanding offline blob URLs when the provider unmounts.
+  useEffect(() => {
+    return () => {
+      for (const url of offlineUrlsRef.current) URL.revokeObjectURL(url);
+      offlineUrlsRef.current = [];
+    };
+  }, []);
 
   // Keep the OS play/pause indicator in step with our state.
   useEffect(() => {
@@ -613,7 +660,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       currentTime,
       isBuffering,
       volume,
-      isCurrentVisible,
       queue,
       queueIndex,
       hasNext,
@@ -632,18 +678,25 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       clearQueue,
       next,
       prev,
-      setVisible,
       discard,
     }),
-    [currentTrack, isPlaying, currentTime, isBuffering, volume, isCurrentVisible, queue, queueIndex, hasNext, hasPrev, play, pause, toggle, seek, setVolume, playQueue, playAt, addToQueue, playNext, reorderQueue, removeFromQueue, clearQueue, next, prev, setVisible, discard],
+    [currentTrack, isPlaying, currentTime, isBuffering, volume, queue, queueIndex, hasNext, hasPrev, play, pause, toggle, seek, setVolume, playQueue, playAt, addToQueue, playNext, reorderQueue, removeFromQueue, clearQueue, next, prev, discard],
   );
+
+  // Play the downloaded copy when this track's offline audio has resolved;
+  // otherwise stream from the CDN. Keyed by id so a stale resolution from the
+  // previous track can never point the element at the wrong file.
+  const audioSrc =
+    resolvedAudio && currentTrack && resolvedAudio.id === currentTrack.id
+      ? resolvedAudio.src
+      : currentTrack?.audioSrc;
 
   return (
     <PlayerContext.Provider value={value}>
       {children}
       <audio
         ref={audioRef}
-        src={currentTrack?.audioSrc}
+        src={audioSrc}
         preload="metadata"
         onLoadStart={() => applyMediaMetadata(currentTrackRef.current)}
         onPlay={() => setIsPlaying(true)}

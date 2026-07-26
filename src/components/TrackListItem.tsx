@@ -2,17 +2,17 @@
 
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { EnqueueMenu } from "@/components/EnqueueMenu";
+import { DownloadButton } from "@/components/offline/DownloadButton";
 import { usePlayer } from "@/components/PlayerProvider";
 import { Waveform } from "@/components/Waveform";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
-import { useTrackVisibility } from "@/hooks/useTrackVisibility";
 import { useWaveform } from "@/hooks/queries/useWaveform";
 import { formatDuration } from "@/lib/time";
 import { TRACK_LINK_KEYS, type TrackLinks } from "@/lib/trackLinks";
 import { Loader2, Pause, Play } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 // Tracks whether the page's #hash currently points at this slug, so a
 // shared link (see CopyLinkButton) can highlight the track it targets.
@@ -88,8 +88,6 @@ export function TrackListItem({
   const currentTime = isCurrent ? playerCurrentTime : 0;
   const isBuffering = isCurrent && playerIsBuffering;
 
-  const itemRef = useRef<HTMLLIElement>(null);
-  useTrackVisibility(id, itemRef);
   const router = useRouter();
 
   // Waveform peaks are fetched separately from the list data (which no longer
@@ -161,6 +159,9 @@ export function TrackListItem({
       )}
       {id !== undefined && (
         <EnqueueMenu track={{ id, slug, title, audioSrc, artworkSrc, duration }} />
+      )}
+      {id !== undefined && (
+        <DownloadButton track={{ id, slug, title, audioSrc, artworkSrc, duration, tags, links }} />
       )}
       {slug && <CopyLinkButton slug={slug} />}
     </div>
@@ -235,7 +236,6 @@ export function TrackListItem({
 
   return (
     <li
-      ref={itemRef}
       id={slug}
       onClick={openTrack}
       className={`flex flex-col gap-3 p-4 rounded-box transition-colors duration-500 ${

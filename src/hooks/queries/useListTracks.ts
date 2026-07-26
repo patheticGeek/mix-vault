@@ -19,5 +19,9 @@ export function useListTracks() {
   return useQuery<TracksResponse, Error>({
     queryKey: ["tracks"],
     queryFn: fetchTracks,
+    // Fail fast so the homepage can fall back to the offline (downloaded-only)
+    // view quickly when the server is unreachable, instead of retrying for
+    // several seconds. navigator.onLine can't be trusted for this on its own.
+    retry: 1,
   });
 }
