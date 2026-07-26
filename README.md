@@ -13,11 +13,20 @@ mix-vault is a self-hosted streaming platform for DJs and producers to upload th
 
 ## Screenshots
 
-![Home](docs/screenshots/home.png)
-
-![Track page](docs/screenshots/track.png)
-
-![Player](docs/screenshots/player.png)
+<table>
+  <tr>
+    <td><img src="docs/screenshots/home.png" alt="Home" /></td>
+    <td><img src="docs/screenshots/track.png" alt="Track page" /></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/player.png" alt="Player" /></td>
+    <td><img src="docs/screenshots/downloads.png" alt="Downloads" /></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/admin.png" alt="Admin" /></td>
+    <td><img src="docs/screenshots/new-track.png" alt="New track form" /></td>
+  </tr>
+</table>
 
 ## Tech Stack
 
