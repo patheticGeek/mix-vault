@@ -70,3 +70,7 @@ pnpm run generate:auth-secrets # prompts for a username/password, prints AUTH_US
 ```
 
 Add the printed values to `.dev.vars` for local development, or set them with `wrangler secret put <NAME>` for production.
+
+---
+
+<p align="center"><sub>Built with 🤖 · <a href="https://github.com/patheticGeek/mix-vault">patheticGeek/mix-vault</a></sub></p>
