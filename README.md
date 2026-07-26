@@ -17,6 +17,8 @@ mix-vault is a self-hosted streaming platform for DJs and producers to upload th
 
 ![Track page](docs/screenshots/track.png)
 
+![Player](docs/screenshots/player.png)
+
 ## Tech Stack
 
 - Next.js
