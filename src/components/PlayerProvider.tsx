@@ -221,8 +221,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // control can pause/resume it. isPlaying only expresses what we'd *like*.
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !currentTrack) return;
-    if (isPlaying) {
+    if (!audio) return;
+    // With no current track (e.g. after clearing the queue) there's nothing to
+    // resume, so always pause — otherwise the element keeps playing its
+    // buffered media even though we've dropped the track.
+    if (isPlaying && currentTrack) {
       audio.play().catch(() => setIsPlaying(false));
     } else {
       audio.pause();
