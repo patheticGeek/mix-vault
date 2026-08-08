@@ -5,8 +5,21 @@ import { useListTracks } from "@/hooks/queries/useListTracks";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
+// Explicit palette colors rather than the theme's success/warning/error
+// tokens, which render too washed-out (green/yellow look alike, red reads
+// pink). A deep green, a true amber, and a strong red stay distinct.
+const STATUS_BADGE: Record<string, string> = {
+  public: "border-transparent bg-green-600 text-white",
+  unlisted: "border-transparent bg-amber-400 text-amber-950",
+  private: "border-transparent bg-red-600 text-white",
+};
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 export default function AdminPage() {
-  const { data: tracks, isLoading, error } = useListTracks();
+  const { data: tracks, isLoading, error } = useListTracks("all");
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-base-100 text-base-content">
@@ -36,7 +49,14 @@ export default function AdminPage() {
                 className="list-row hover:bg-base-300 transition-colors flex items-center gap-2"
               >
                 <Link href={`/admin/tracks/${track.id}/edit`} className="flex-1 min-w-0">
-                  <div className="font-semibold">{track.title}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{track.title}</span>
+                    <span
+                      className={`badge badge-sm rounded-full ${STATUS_BADGE[track.status] ?? "badge-ghost"}`}
+                    >
+                      {capitalize(track.status)}
+                    </span>
+                  </div>
                   <div className="text-sm text-base-content/60">/{track.slug}</div>
                 </Link>
                 <CopyLinkButton slug={track.slug} />

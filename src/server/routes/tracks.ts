@@ -1,7 +1,7 @@
-import { requireAuth } from "@/lib/auth/session";
+import { getOptionalSession, requireAuth } from "@/lib/auth/session";
 import { sha256Hex } from "@/lib/contentHash";
 import { getDb, tracks } from "@/lib/db";
-import { normalizeTrackRow, normalizeTrackSummary } from "@/lib/db/schema";
+import { normalizeTrackRow, normalizeTrackSummary, trackStatusSchema } from "@/lib/db/schema";
 import { ensureUniqueSlug } from "@/lib/slug";
 import { parseTrackLinks } from "@/lib/trackLinks";
 import { trackAssetKey } from "@/lib/trackAssetKey";
@@ -16,6 +16,15 @@ function extensionOf(filename: string): string {
   return dot === -1 ? "" : filename.slice(dot);
 }
 
+// Whether the current request may open a single track. Public and unlisted
+// tracks are openable by anyone with the link; private tracks require a valid
+// session. Callers treat `false` as a 404 so a private track's existence isn't
+// revealed to anonymous visitors.
+async function canView(c: Parameters<typeof getOptionalSession>[0], status: string): Promise<boolean> {
+  if (status !== "private") return true;
+  return Boolean(await getOptionalSession(c));
+}
+
 const createTrackSchema = z
   .object({
     trackId: z.string().uuid("Invalid track id"),
@@ -23,6 +32,7 @@ const createTrackSchema = z
     description: z.string({ error: "Description is required" }).min(1, "Description is required"),
     tags: z.string().optional(),
     slug: z.string().optional(),
+    status: trackStatusSchema.optional(),
     links: z.string().optional(),
     audioFileKey: z.string({ error: "Audio file is required" }).min(1, "Audio file is required"),
     artworkFile: z
@@ -48,6 +58,7 @@ const updateTrackSchema = z.object({
   description: z.string({ error: "Description is required" }).min(1, "Description is required"),
   tags: z.string().optional(),
   slug: z.string().optional(),
+  status: trackStatusSchema.optional(),
   links: z.string().optional(),
   artworkFile: z
     .instanceof(File, { message: "Invalid artwork file" })
@@ -69,6 +80,7 @@ const summaryColumns = {
   artworkFile: tracks.artworkFile,
   duration: tracks.duration,
   slug: tracks.slug,
+  status: tracks.status,
   links: tracks.links,
   recordedAt: tracks.recordedAt,
   createdAt: tracks.createdAt,
@@ -82,34 +94,48 @@ const detailColumns = {
 } as const;
 
 export const tracksRouter = new Hono()
-  .get("/", async (c) => {
-    const db = getDb();
-    const rows = await db.select(summaryColumns).from(tracks).orderBy(desc(tracks.createdAt));
-    return c.json(rows.map(normalizeTrackSummary));
-  })
+  .get(
+    "/",
+    zValidator("query", z.object({ scope: z.enum(["public", "all"]).optional() })),
+    async (c) => {
+      // The homepage only ever lists public tracks. The admin passes
+      // `scope=all` to manage unlisted/private ones too — but that's only
+      // honored for a logged-in request, so it can never leak hidden tracks.
+      const { scope } = c.req.valid("query");
+      const session = scope === "all" ? await getOptionalSession(c) : null;
+      const includeAll = scope === "all" && Boolean(session);
+
+      const db = getDb();
+      const query = db.select(summaryColumns).from(tracks);
+      const rows = await (includeAll ? query : query.where(eq(tracks.status, "public"))).orderBy(
+        desc(tracks.createdAt),
+      );
+      return c.json(rows.map(normalizeTrackSummary));
+    },
+  )
   .get("/slug/:slug", async (c) => {
     const slug = c.req.param("slug");
     const db = getDb();
     const [row] = await db.select(detailColumns).from(tracks).where(eq(tracks.slug, slug)).limit(1);
-    if (!row) return c.json({ error: "Track not found" }, 404);
+    if (!row || !(await canView(c, row.status))) return c.json({ error: "Track not found" }, 404);
     return c.json(normalizeTrackRow(row));
   })
   .get("/:id", async (c) => {
     const id = c.req.param("id");
     const db = getDb();
     const [row] = await db.select(detailColumns).from(tracks).where(eq(tracks.id, id)).limit(1);
-    if (!row) return c.json({ error: "Track not found" }, 404);
+    if (!row || !(await canView(c, row.status))) return c.json({ error: "Track not found" }, 404);
     return c.json(normalizeTrackRow(row));
   })
   .get("/:id/waveform", async (c) => {
     const id = c.req.param("id");
     const db = getDb();
     const [row] = await db
-      .select({ waveformPreview: tracks.waveformPreview })
+      .select({ waveformPreview: tracks.waveformPreview, status: tracks.status })
       .from(tracks)
       .where(eq(tracks.id, id))
       .limit(1);
-    if (!row) return c.json({ error: "Track not found" }, 404);
+    if (!row || !(await canView(c, row.status))) return c.json({ error: "Track not found" }, 404);
     return c.json({ waveformPreview: row.waveformPreview });
   })
   .post(
@@ -127,6 +153,7 @@ export const tracksRouter = new Hono()
         description,
         tags: tagsInput,
         slug: slugInput,
+        status,
         links: linksInput,
         audioFileKey,
         artworkFile,
@@ -174,6 +201,7 @@ export const tracksRouter = new Hono()
           duration,
           recordedAt,
           slug,
+          status: status ?? "public",
           links: JSON.stringify(links),
         })
         .returning();
@@ -196,6 +224,7 @@ export const tracksRouter = new Hono()
         description,
         tags: tagsInput,
         slug: slugInput,
+        status,
         links: linksInput,
         artworkFile,
         recordedAt,
@@ -240,6 +269,7 @@ export const tracksRouter = new Hono()
           description,
           tags: JSON.stringify(tags),
           slug,
+          ...(status ? { status } : {}),
           artworkFile: artworkFileKey,
           recordedAt,
           links: JSON.stringify(links),

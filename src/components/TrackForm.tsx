@@ -54,11 +54,35 @@ function useObjectUrl(file: File | null): string | null {
   return url;
 }
 
+type TrackStatus = "public" | "unlisted" | "private";
+
+const STATUS_OPTIONS: { value: TrackStatus; label: string; hint: string; activeClass: string }[] = [
+  {
+    value: "public",
+    label: "Public",
+    hint: "Listed on the homepage, open to anyone.",
+    activeClass: "border-transparent bg-green-600 text-white hover:bg-green-600",
+  },
+  {
+    value: "unlisted",
+    label: "Unlisted",
+    hint: "Hidden from the homepage, open to anyone with the link.",
+    activeClass: "border-transparent bg-amber-400 text-amber-950 hover:bg-amber-400",
+  },
+  {
+    value: "private",
+    label: "Private",
+    hint: "Hidden from the homepage, only opens when you're logged in.",
+    activeClass: "border-transparent bg-red-600 text-white hover:bg-red-600",
+  },
+];
+
 interface TrackFormValues {
   title: string;
   slug: string;
   description: string;
   tags: string;
+  status: TrackStatus;
   recordedAt: string;
   links: Record<TrackLinkKey, string>;
 }
@@ -77,6 +101,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
       slug: track?.slug ?? "",
       description: track?.description ?? "",
       tags: track?.tags.join(", ") ?? "",
+      status: (track?.status as TrackStatus | undefined) ?? "public",
       recordedAt: track?.recordedAt ? toDateInputValue(track.recordedAt) : "",
       links: TRACK_LINK_KEYS.reduce(
         (acc, key) => {
@@ -141,6 +166,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   }, [isEditMode, previewId, discard]);
 
   const titleValue = watch("title");
+  const statusValue = watch("status");
 
   useEffect(() => {
     if (!slugTouched) setValue("slug", slugify(titleValue));
@@ -223,6 +249,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           description: values.description,
           tags: values.tags,
           slug: values.slug,
+          status: values.status,
           recordedAt: values.recordedAt,
           links: serializeLinks(values.links),
           artworkFile: artworkFile ?? undefined,
@@ -243,6 +270,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
         description: values.description,
         tags: values.tags,
         slug: values.slug,
+        status: values.status,
         recordedAt: values.recordedAt,
         links: serializeLinks(values.links),
         audioFile,
@@ -259,6 +287,31 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+      <div className="form-control">
+        <label className="label">
+          <span className="label-text">Visibility</span>
+        </label>
+        <div className="join w-full">
+          {STATUS_OPTIONS.map((option) => {
+            const isActive = statusValue === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => setValue("status", option.value)}
+                className={`btn join-item flex-1 ${isActive ? option.activeClass : "btn-ghost"}`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+        <span className="label-text-alt text-xs text-base-content/60 mt-1">
+          {STATUS_OPTIONS.find((option) => option.value === statusValue)?.hint}
+        </span>
+      </div>
+
       <div className="flex gap-4">
         {hasAudioPreview ? (
           <div className="relative flex-1 min-w-0 h-24 rounded bg-base-300 overflow-hidden flex items-center px-3 gap-3">

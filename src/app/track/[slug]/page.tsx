@@ -1,5 +1,6 @@
 import { TrackPageClient } from "@/app/track/[slug]/TrackPageClient";
 import { APP_TITLE } from "@/config";
+import { getServerSession } from "@/lib/auth/getServerSession";
 import type { TrackBySlugResponse } from "@/hooks/queries/useTrackBySlug";
 import { assetUrl } from "@/lib/cdn";
 import { getDb, tracks } from "@/lib/db";
@@ -9,11 +10,16 @@ import type { Metadata } from "next";
 import { cache } from "react";
 
 // cache() dedupes this within a single request, so generateMetadata and the
-// page body below share one DB query instead of two.
+// page body below share one DB query instead of two. Private tracks are only
+// resolved for a logged-in visitor — for anyone else they read as "not found"
+// (both here and in the client fetch), so the content never renders or leaks
+// into page metadata.
 const getTrackBySlug = cache(async (slug: string) => {
   const db = getDb();
   const [row] = await db.select().from(tracks).where(eq(tracks.slug, slug)).limit(1);
-  return row ?? null;
+  if (!row) return null;
+  if (row.status === "private" && !(await getServerSession())) return null;
+  return row;
 });
 
 export async function generateMetadata({

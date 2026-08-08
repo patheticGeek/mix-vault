@@ -464,7 +464,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await apiClient.api.tracks.$get();
+        // scope=all so an unlisted/private track that's legitimately queued
+        // isn't mistaken for a deleted one and pruned (only honored when
+        // logged in; otherwise the server still returns public tracks only).
+        const res = await apiClient.api.tracks.$get({ query: { scope: "all" } });
         if (!res.ok) return;
         const rows = await res.json();
         if (cancelled) return;

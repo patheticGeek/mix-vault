@@ -3,6 +3,14 @@ import { sql } from "drizzle-orm";
 import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 
+// A track's visibility:
+//   public   — listed on the homepage and openable by anyone
+//   unlisted — hidden from the homepage but openable by anyone with the link
+//   private  — hidden from the homepage and only openable when logged in
+export const TRACK_STATUSES = ["public", "unlisted", "private"] as const;
+export const trackStatusSchema = z.enum(TRACK_STATUSES);
+export type TrackStatus = z.infer<typeof trackStatusSchema>;
+
 // Fields shared by every track representation the API returns. It
 // deliberately omits `description` and `waveformPreview` — both are heavy, so
 // the list endpoint returns only these lightweight fields, the single-track
@@ -16,6 +24,7 @@ const trackBaseSchema = z.object({
   artworkFile: z.string(),
   duration: z.number(),
   slug: z.string(),
+  status: trackStatusSchema,
   links: z.record(z.string(), z.string()),
   recordedAt: z.date().nullable(),
   createdAt: z.date(),
@@ -79,6 +88,7 @@ export const tracks = sqliteTable(
     waveformPreview: text("waveform_preview").notNull(),
     duration: real("duration").notNull(),
     slug: text("slug").notNull().unique(),
+    status: text("status", { enum: TRACK_STATUSES }).notNull().default("public"),
     links: text("links").notNull().default("{}"),
     recordedAt: integer("recorded_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
@@ -88,5 +98,6 @@ export const tracks = sqliteTable(
   (t) => [
     index("idx_tracks_title").on(t.title),
     index("idx_tracks_tags").on(t.tags),
+    index("idx_tracks_status").on(t.status),
   ],
 );

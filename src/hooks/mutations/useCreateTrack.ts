@@ -39,6 +39,7 @@ async function createTrack({
   formData.set("description", form.description);
   if (form.tags !== undefined) formData.set("tags", form.tags);
   if (form.slug !== undefined) formData.set("slug", form.slug);
+  if (form.status !== undefined) formData.set("status", form.status);
   formData.set("audioFileKey", audioFileKey);
   formData.set("artworkFile", form.artworkFile);
   formData.set("waveformPreview", form.waveformPreview);
