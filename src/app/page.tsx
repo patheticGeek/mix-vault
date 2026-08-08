@@ -2,7 +2,7 @@ import { HomeClient } from "@/app/HomeClient";
 import type { TrackSummary } from "@/hooks/queries/useListTracks";
 import { getDb, tracks } from "@/lib/db";
 import { normalizeTrackSummary } from "@/lib/db/schema";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 const RECENT_TRACKS_LIMIT = 5;
 
@@ -13,9 +13,13 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const db = getDb();
+  // Only public tracks — this must match what the client's `useListTracks()`
+  // fetch returns (scope defaults to "public"), otherwise unlisted/private
+  // tracks would flash in the SSR HTML and then disappear on hydration.
   const rows = await db
     .select()
     .from(tracks)
+    .where(eq(tracks.status, "public"))
     .orderBy(desc(tracks.createdAt))
     .limit(RECENT_TRACKS_LIMIT);
 
