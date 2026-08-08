@@ -70,3 +70,16 @@ pnpm run generate:auth-secrets # prompts for a username/password, prints AUTH_US
 ```
 
 Add the printed values to `.dev.vars` for local development, or set them with `wrangler secret put <NAME>` for production.
+
+### Default artwork
+
+Artwork is optional when uploading a track. Tracks uploaded without their own image fall back to a shared default object in R2 at `tracks/default/icon.png`, so seed that key once per environment:
+
+```bash
+# local dev R2
+wrangler r2 object put mix-vault/tracks/default/icon.png --file ./path/to/icon.png --local
+# production R2
+wrangler r2 object put mix-vault/tracks/default/icon.png --file ./path/to/icon.png --remote
+```
+
+The default is a single shared object (not per-track), so it's left untouched when a track's artwork is replaced or the track is deleted.

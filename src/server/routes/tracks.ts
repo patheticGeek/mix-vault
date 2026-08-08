@@ -4,7 +4,7 @@ import { getDb, tracks } from "@/lib/db";
 import { normalizeTrackRow, normalizeTrackSummary, trackStatusSchema } from "@/lib/db/schema";
 import { ensureUniqueSlug } from "@/lib/slug";
 import { parseTrackLinks } from "@/lib/trackLinks";
-import { trackAssetKey } from "@/lib/trackAssetKey";
+import { DEFAULT_ARTWORK_KEY, trackAssetKey } from "@/lib/trackAssetKey";
 import { zValidator } from "@hono/zod-validator";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { desc, eq } from "drizzle-orm";
@@ -36,8 +36,9 @@ const createTrackSchema = z
     links: z.string().optional(),
     audioFileKey: z.string({ error: "Audio file is required" }).min(1, "Audio file is required"),
     artworkFile: z
-      .instanceof(File, { message: "Artwork file is required" })
-      .refine((file) => file.size > 0, "Artwork file is required"),
+      .instanceof(File, { message: "Invalid artwork file" })
+      .refine((file) => file.size > 0, "Artwork file must not be empty")
+      .optional(),
     waveformPreview: z.string({ error: "Waveform preview is required" }).min(1, "Waveform preview is required"),
     duration: z
       .string({ error: "Duration is required" })
@@ -179,13 +180,17 @@ export const tracksRouter = new Hono()
       const links = parseTrackLinks(linksInput);
 
       const id = trackId;
-      const artworkBuffer = await artworkFile.arrayBuffer();
-      const artworkHash = await sha256Hex(artworkBuffer);
-      const artworkFileKey = trackAssetKey(id, artworkHash, extensionOf(artworkFile.name));
-
-      await context.env.MIX_VAULT_R2.put(artworkFileKey, artworkBuffer, {
-        httpMetadata: { contentType: artworkFile.type || undefined },
-      });
+      // Artwork is optional — fall back to the shared default image when the
+      // uploader didn't provide one of their own.
+      let artworkFileKey = DEFAULT_ARTWORK_KEY;
+      if (artworkFile) {
+        const artworkBuffer = await artworkFile.arrayBuffer();
+        const artworkHash = await sha256Hex(artworkBuffer);
+        artworkFileKey = trackAssetKey(id, artworkHash, extensionOf(artworkFile.name));
+        await context.env.MIX_VAULT_R2.put(artworkFileKey, artworkBuffer, {
+          httpMetadata: { contentType: artworkFile.type || undefined },
+        });
+      }
 
       const db = getDb();
       const [row] = await db
@@ -256,7 +261,7 @@ export const tracksRouter = new Hono()
         await context.env.MIX_VAULT_R2.put(newArtworkFileKey, artworkBuffer, {
           httpMetadata: { contentType: artworkFile.type || undefined },
         });
-        if (newArtworkFileKey !== existing.artworkFile) {
+        if (newArtworkFileKey !== existing.artworkFile && existing.artworkFile !== DEFAULT_ARTWORK_KEY) {
           await context.env.MIX_VAULT_R2.delete(existing.artworkFile);
         }
         artworkFileKey = newArtworkFileKey;
@@ -289,7 +294,10 @@ export const tracksRouter = new Hono()
     const context = getCloudflareContext();
     await Promise.all([
       context.env.MIX_VAULT_R2.delete(existing.audioFile),
-      context.env.MIX_VAULT_R2.delete(existing.artworkFile),
+      // Never delete the shared default artwork — only per-track artwork.
+      ...(existing.artworkFile !== DEFAULT_ARTWORK_KEY
+        ? [context.env.MIX_VAULT_R2.delete(existing.artworkFile)]
+        : []),
     ]);
 
     await db.delete(tracks).where(eq(tracks.id, id));

@@ -13,6 +13,7 @@ import { extractAudioMetadata } from "@/lib/audioMetadata";
 import { assetUrl } from "@/lib/cdn";
 import { formatDuration } from "@/lib/time";
 import { TRACK_LINK_KEYS, type TrackLinkKey } from "@/lib/trackLinks";
+import { DEFAULT_ARTWORK_KEY } from "@/lib/trackAssetKey";
 import { extractWaveformPeaks, type WaveformAnalysis } from "@/lib/waveform";
 import { Loader2, Pause, Play } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -126,7 +127,11 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   const audioPreviewUrl = useObjectUrl(audioFile);
   const artworkPreviewUrl = useObjectUrl(artworkFile);
   const audioSrc = audioPreviewUrl ?? (track ? assetUrl(track.audioFile) : null);
+  // Artwork is optional. `artworkSrc` stays null when none is chosen (the box
+  // shows its "Upload artwork" placeholder), while preview playback falls back
+  // to the shared default so it can start without a picked image.
   const artworkSrc = artworkPreviewUrl ?? (track ? assetUrl(track.artworkFile) : null);
+  const previewArtworkSrc = artworkSrc ?? assetUrl(DEFAULT_ARTWORK_KEY);
 
   // When editing, the existing track's waveform is fetched separately (the
   // track fetch no longer includes it).
@@ -173,13 +178,13 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   }, [titleValue, slugTouched, setValue]);
 
   function togglePreviewPlay() {
-    if (!audioSrc || !artworkSrc) return;
+    if (!audioSrc) return;
     toggle({
       id: previewId,
       slug: track?.slug,
       title: titleValue || "Untitled",
       audioSrc,
-      artworkSrc,
+      artworkSrc: previewArtworkSrc,
       duration: previewDuration,
     });
   }
@@ -261,7 +266,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
       return;
     }
 
-    if (!audioFile || !artworkFile || !waveformAnalysis) return;
+    if (!audioFile || !waveformAnalysis) return;
 
     setUploadProgress(0);
     try {
@@ -274,7 +279,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
         recordedAt: values.recordedAt,
         links: serializeLinks(values.links),
         audioFile,
-        artworkFile,
+        artworkFile: artworkFile ?? undefined,
         waveformPreview: JSON.stringify(waveformAnalysis.peaks),
         duration: waveformAnalysis.duration,
         onProgress: setUploadProgress,
@@ -318,7 +323,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
             <button
               type="button"
               onClick={togglePreviewPlay}
-              disabled={!artworkSrc}
+              disabled={!audioSrc}
               aria-label={isPlaying ? "Pause" : "Play"}
               className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-base-100/90 text-base-content disabled:opacity-40"
             >
@@ -384,7 +389,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
             <img src={artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
           ) : (
             <span className="absolute inset-0 flex items-center justify-center text-center text-xs font-medium text-base-content/60 px-2">
-              Upload artwork
+              Artwork (optional)
             </span>
           )}
         </button>
@@ -505,7 +510,6 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
         id="artworkFile"
         type="file"
         accept="image/*"
-        required={!isEditMode}
         onChange={(e) => setArtworkFile(e.target.files?.[0] ?? null)}
         className="sr-only"
       />
