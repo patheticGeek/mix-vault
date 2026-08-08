@@ -41,6 +41,11 @@ export async function generateMetadata({
   return {
     title,
     description,
+    // Only public tracks should be indexed. Unlisted tracks are meant to be
+    // reachable by link but kept out of search results; private ones only
+    // resolve for a logged-in visitor at all, but tell crawlers not to index
+    // them regardless.
+    ...(track.status === "public" ? {} : { robots: { index: false, follow: false } }),
     openGraph: {
       title,
       description,
