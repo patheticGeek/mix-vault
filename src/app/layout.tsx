@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import Providers from "@/components/Providers";
+import { THEME_INIT_SCRIPT } from "@/components/ThemeProvider";
 import { APP_DESC, APP_TITLE } from "@/config";
 import "./globals.css";
 
@@ -27,11 +28,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="black">
+    <html lang="en" data-theme="classic">
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="manifest" href="/manifest.webmanifest" />
-        <meta name="theme-color" content="#000000" />
+        <meta name="theme-color" content="#23232a" />
+        {/* Applies the visitor's stored skin/theme before first paint, so
+            reloading doesn't flash the default "classic" theme first. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-base-100 text-base-content`}

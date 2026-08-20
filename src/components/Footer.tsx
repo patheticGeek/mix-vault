@@ -1,16 +1,11 @@
 "use client";
 
 import { Bot } from "lucide-react";
-import { usePathname } from "next/navigation";
 
 const REPO_URL = "https://github.com/patheticGeek/mix-vault";
 
-// Small footer at the very end of the page. Hidden on /player, which is a
-// full-bleed, chrome-free view (same as the navbar).
+// Small footer at the very end of the page.
 export function Footer() {
-  const pathname = usePathname();
-  if (pathname === "/player") return null;
-
   return (
     <footer className="py-6 text-center text-xs text-base-content/50">
       <span className="inline-flex items-center gap-1.5">

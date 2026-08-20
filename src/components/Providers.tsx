@@ -1,11 +1,12 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
-import { MiniPlayer } from "@/components/MiniPlayer";
 import { OfflineProvider } from "@/components/offline/OfflineProvider";
 import { RegisterServiceWorker } from "@/components/offline/RegisterServiceWorker";
+import { PlayerBar } from "@/components/PlayerBar";
 import { PlayerProvider } from "@/components/PlayerProvider";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
 
 export default function Providers({
   children,
@@ -29,12 +30,14 @@ export default function Providers({
   return (
     <QueryClientProvider client={queryClient}>
       <RegisterServiceWorker />
-      <OfflineProvider>
-        <PlayerProvider>
-          {children}
-          <MiniPlayer />
-        </PlayerProvider>
-      </OfflineProvider>
+      <ThemeProvider>
+        <OfflineProvider>
+          <PlayerProvider>
+            {children}
+            <PlayerBar />
+          </PlayerProvider>
+        </OfflineProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

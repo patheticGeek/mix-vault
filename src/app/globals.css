@@ -1,23 +1,100 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+/* One daisyUI theme per player skin (src/components/magic/skins) — selecting
+   a skin re-themes the whole site (buttons, inputs, badges, etc. via daisyUI's
+   CSS variables), not just the player widget. Palette values are kept in sync
+   with each skin's hardcoded colors and with the `theme` entries in
+   src/components/magic/skins/index.ts. --font-skin is a custom token (not a
+   daisyUI built-in) consumed by globals' `body` rule below. */
+
 @plugin "daisyui/theme" {
-  name: "black";
+  name: "classic";
   default: true;
   prefersdark: true;
   color-scheme: "dark";
-  --color-base-100: oklch(14% 0.005 285.823);
-  --color-base-200: oklch(21% 0.006 285.885);
-  --color-base-300: oklch(27% 0.006 286.033);
-  --color-base-content: oklch(96% 0.001 286.375);
-  --color-primary: oklch(55% 0.288 302.321);
-  --color-primary-content: oklch(97% 0.014 308.299);
-  --color-secondary: oklch(59% 0.249 0.584);
-  --color-secondary-content: oklch(97% 0.014 343.198);
-  --color-accent: oklch(54% 0.245 262.881);
-  --color-accent-content: oklch(97% 0.014 254.604);
-  --color-neutral: oklch(44% 0.017 285.786);
-  --color-neutral-content: oklch(98% 0 0);
+  --color-base-100: #23232a;
+  --color-base-200: #1c1c22;
+  --color-base-300: #3a3a44;
+  --color-base-content: #e6e6ee;
+  --color-primary: #22ff77;
+  --color-primary-content: #05100a;
+  --color-secondary: #9a9aa5;
+  --color-secondary-content: #14141a;
+  --color-accent: #22ff77;
+  --color-accent-content: #05100a;
+  --color-neutral: #14141a;
+  --color-neutral-content: #e6e6ee;
+  --color-info: oklch(78% 0.154 211.53);
+  --color-info-content: oklch(30% 0.056 229.695);
+  --color-success: oklch(84% 0.238 128.85);
+  --color-success-content: oklch(27% 0.072 132.109);
+  --color-warning: oklch(85% 0.199 91.936);
+  --color-warning-content: oklch(28% 0.066 53.813);
+  --color-error: oklch(71% 0.194 13.428);
+  --color-error-content: oklch(27% 0.105 12.094);
+  --radius-selector: 3px;
+  --radius-field: 3px;
+  --radius-box: 3px;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 0.5px;
+  --depth: 0;
+  --noise: 0;
+  --font-skin: var(--font-geist-mono), monospace;
+}
+
+@plugin "daisyui/theme" {
+  name: "cyberpunk";
+  prefersdark: true;
+  color-scheme: "dark";
+  --color-base-100: #06070a;
+  --color-base-200: #0a0e14;
+  --color-base-300: #0f141c;
+  --color-base-content: #c9f7ff;
+  --color-primary: #22d3ee;
+  --color-primary-content: #04121a;
+  --color-secondary: #ff2bd6;
+  --color-secondary-content: #1a0414;
+  --color-accent: #22d3ee;
+  --color-accent-content: #04121a;
+  --color-neutral: #0f141c;
+  --color-neutral-content: #c9f7ff;
+  --color-info: oklch(78% 0.154 211.53);
+  --color-info-content: oklch(30% 0.056 229.695);
+  --color-success: oklch(84% 0.238 128.85);
+  --color-success-content: oklch(27% 0.072 132.109);
+  --color-warning: oklch(85% 0.199 91.936);
+  --color-warning-content: oklch(28% 0.066 53.813);
+  --color-error: oklch(71% 0.194 13.428);
+  --color-error-content: oklch(27% 0.105 12.094);
+  --radius-selector: 2px;
+  --radius-field: 2px;
+  --radius-box: 2px;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+  --font-skin: var(--font-geist-mono), monospace;
+}
+
+@plugin "daisyui/theme" {
+  name: "terminal";
+  prefersdark: true;
+  color-scheme: "dark";
+  --color-base-100: #05100a;
+  --color-base-200: #071a10;
+  --color-base-300: #0a2415;
+  --color-base-content: #22ff77;
+  --color-primary: #22ff77;
+  --color-primary-content: #05100a;
+  --color-secondary: #1c9c54;
+  --color-secondary-content: #05100a;
+  --color-accent: #22ff77;
+  --color-accent-content: #05100a;
+  --color-neutral: #124a28;
+  --color-neutral-content: #22ff77;
   --color-info: oklch(78% 0.154 211.53);
   --color-info-content: oklch(30% 0.056 229.695);
   --color-success: oklch(84% 0.238 128.85);
@@ -31,7 +108,82 @@
   --radius-box: 0rem;
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
-  --border: 0.5px;
+  --border: 1px;
   --depth: 0;
   --noise: 0;
+  --font-skin: var(--font-geist-mono), monospace;
+}
+
+@plugin "daisyui/theme" {
+  name: "vaporwave";
+  prefersdark: true;
+  color-scheme: "dark";
+  --color-base-100: #1e0a32;
+  --color-base-200: #170826;
+  --color-base-300: #2a0a3a;
+  --color-base-content: #ffe6ff;
+  --color-primary: #ff5fd0;
+  --color-primary-content: #2a0a3a;
+  --color-secondary: #22d3ee;
+  --color-secondary-content: #04121a;
+  --color-accent: #ff5fd0;
+  --color-accent-content: #2a0a3a;
+  --color-neutral: #3c145a;
+  --color-neutral-content: #ffe6ff;
+  --color-info: oklch(78% 0.154 211.53);
+  --color-info-content: oklch(30% 0.056 229.695);
+  --color-success: oklch(84% 0.238 128.85);
+  --color-success-content: oklch(27% 0.072 132.109);
+  --color-warning: oklch(85% 0.199 91.936);
+  --color-warning-content: oklch(28% 0.066 53.813);
+  --color-error: oklch(71% 0.194 13.428);
+  --color-error-content: oklch(27% 0.105 12.094);
+  --radius-selector: 12px;
+  --radius-field: 12px;
+  --radius-box: 12px;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+  --font-skin: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+@plugin "daisyui/theme" {
+  name: "ipod";
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: #ffffff;
+  --color-base-200: #f4f4f5;
+  --color-base-300: #d4d4d8;
+  --color-base-content: #18181b;
+  --color-primary: #3b82f6;
+  --color-primary-content: #ffffff;
+  --color-secondary: #71717a;
+  --color-secondary-content: #ffffff;
+  --color-accent: #3b82f6;
+  --color-accent-content: #ffffff;
+  --color-neutral: #d4d4d8;
+  --color-neutral-content: #18181b;
+  --color-info: oklch(78% 0.154 211.53);
+  --color-info-content: oklch(30% 0.056 229.695);
+  --color-success: oklch(64% 0.15 142);
+  --color-success-content: #ffffff;
+  --color-warning: oklch(75% 0.16 80);
+  --color-warning-content: #1a1200;
+  --color-error: oklch(58% 0.22 25);
+  --color-error-content: #ffffff;
+  --radius-selector: 10px;
+  --radius-field: 10px;
+  --radius-box: 10px;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+  --font-skin: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-skin);
 }
