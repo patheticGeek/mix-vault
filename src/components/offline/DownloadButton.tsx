@@ -21,7 +21,9 @@ export function DownloadButton({
   if (!supported) return null;
 
   const status = state?.status;
-  const base = showLabel ? "btn btn-ghost btn-sm gap-1.5" : "btn btn-ghost btn-xs";
+  // Same btn-xs sizing as the sibling rows (Queue, Copy link, Listen on…) so
+  // the track page's link list stays visually aligned.
+  const base = "btn btn-ghost btn-xs gap-1";
   const label = (text: string) => showLabel && <span>{text}</span>;
 
   if (status === "downloading") {
