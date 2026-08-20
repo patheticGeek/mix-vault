@@ -6,7 +6,8 @@
 // here directly).
 //
 // Usage:
-//   node scripts/regenerate-waveforms.mjs
+//   node scripts/regenerate-waveforms.mjs            (targets local D1)
+//   node scripts/regenerate-waveforms.mjs --remote    (targets prod D1)
 
 import { AwsClient } from "aws4fetch";
 import { spawnSync } from "node:child_process";
@@ -47,12 +48,12 @@ function runWrangler(args) {
   return result.stdout;
 }
 
-function fetchTracks() {
+function fetchTracks(dbFlag) {
   const stdout = runWrangler([
     "d1",
     "execute",
     D1_DB_NAME,
-    "--local",
+    dbFlag,
     "--json",
     "--command",
     "SELECT id, audio_file FROM tracks",
@@ -102,19 +103,20 @@ function computePeaks(filePath) {
   return peaks;
 }
 
-function updateWaveform(id, peaks) {
+function updateWaveform(id, peaks, dbFlag) {
   const json = JSON.stringify(peaks).replace(/'/g, "''");
   runWrangler([
     "d1",
     "execute",
     D1_DB_NAME,
-    "--local",
+    dbFlag,
     "--command",
     `UPDATE tracks SET waveform_preview = '${json}' WHERE id = '${id}'`,
   ]);
 }
 
 async function main() {
+  const dbFlag = process.argv.includes("--remote") ? "--remote" : "--local";
   if (!existsSync(AUDIO_DIR)) mkdirSync(AUDIO_DIR, { recursive: true });
 
   const devVars = loadDevVars();
@@ -127,8 +129,8 @@ async function main() {
   });
   const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
 
-  const tracks = fetchTracks();
-  console.log(`Found ${tracks.length} track(s) in local DB.`);
+  const tracks = fetchTracks(dbFlag);
+  console.log(`Found ${tracks.length} track(s) in ${dbFlag === "--remote" ? "prod" : "local"} DB.`);
 
   for (const track of tracks) {
     const destPath = path.join(AUDIO_DIR, `${track.id}${path.extname(track.audio_file)}`);
@@ -141,7 +143,7 @@ async function main() {
 
     console.log(`Computing waveform for ${track.id}...`);
     const peaks = computePeaks(destPath);
-    updateWaveform(track.id, peaks);
+    updateWaveform(track.id, peaks, dbFlag);
     console.log(`Updated waveform_preview for ${track.id}`);
   }
 
