@@ -48,5 +48,8 @@ next-env.d.ts
 .wrangler
 .dev.vars*
 
+# audio pulled locally for waveform regeneration
+/local-audio
+
 
 !.dev.vars.example
