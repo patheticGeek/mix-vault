@@ -65,7 +65,8 @@ export function CyberpunkSkin({
 
       {/* Header */}
       <div className="mb-3 flex items-center justify-between text-[10px] tracking-[0.35em]">
-        <span style={{ color: cyan, textShadow: `0 0 8px ${cyan}` }}>MIXVAULT{/* SYS */}</span>
+        {/* biome-ignore lint/suspicious/noCommentText: "//SYS" is literal UI text, not an accidental comment */}
+        <span style={{ color: cyan, textShadow: `0 0 8px ${cyan}` }}>MIXVAULT//SYS</span>
         <span
           className="animate-pulse"
           style={{ color: magenta, textShadow: `0 0 8px ${magenta}` }}
