@@ -1,16 +1,16 @@
 "use client";
 
+import { WifiOff } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useOffline } from "@/components/offline/OfflineProvider";
 import { usePlayer } from "@/components/PlayerProvider";
 import { TrackListItem } from "@/components/TrackListItem";
 import { APP_DESC, SOCIAL_MEDIA } from "@/config";
-import { useOffline } from "@/components/offline/OfflineProvider";
-import { useListTracks, type TrackSummary } from "@/hooks/queries/useListTracks";
+import { type TrackSummary, useListTracks } from "@/hooks/queries/useListTracks";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { assetUrl } from "@/lib/cdn";
-import { listDownloads, type DownloadRecord } from "@/lib/offline/idb";
+import { type DownloadRecord, listDownloads } from "@/lib/offline/idb";
 import { timeAgo } from "@/lib/time";
-import { WifiOff } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 
 interface HomeClientProps {
   initialTracks: TrackSummary[];
@@ -38,7 +38,7 @@ export function HomeClient({ initialTracks }: HomeClientProps) {
   // While offline we can't reach the track list, so fall back to what's saved
   // for offline playback, read straight from the download index.
   const [offlineRecords, setOfflineRecords] = useState<DownloadRecord[]>([]);
-  const doneKey = useMemo(
+  const _doneKey = useMemo(
     () =>
       Object.entries(states)
         .filter(([, s]) => s.status === "done")
@@ -62,7 +62,7 @@ export function HomeClient({ initialTracks }: HomeClientProps) {
     return () => {
       cancelled = true;
     };
-  }, [isOffline, doneKey]);
+  }, [isOffline]);
 
   // Object URLs for the downloaded artwork, revoked as the set changes.
   const [artUrls, setArtUrls] = useState<Record<string, string>>({});

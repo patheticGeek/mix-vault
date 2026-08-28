@@ -1,14 +1,9 @@
-import type { TrackLinkKey } from "@/lib/trackLinks";
-import {
-  SiInstagram,
-  SiSoundcloud,
-  SiYoutube,
-} from "@icons-pack/react-simple-icons";
+import { SiInstagram, SiSoundcloud, SiYoutube } from "@icons-pack/react-simple-icons";
 import type { ComponentType } from "react";
+import type { TrackLinkKey } from "@/lib/trackLinks";
 
 export const APP_TITLE = "Pathetic's Mix Vault";
-export const APP_DESC =
-  "A collection of my mixes for everyone to enjoy in HQ :)";
+export const APP_DESC = "A collection of my mixes for everyone to enjoy in HQ :)";
 
 export interface SocialMediaLink {
   label: string;
@@ -49,10 +44,7 @@ export const SOCIAL_MEDIA: SocialMediaLink[] = [
 // Icon + display label for each per-track link (see TRACK_LINK_KEYS in
 // @/lib/trackLinks). Extending which platforms a track can link to means
 // adding a key there and an entry here.
-export const TRACK_LINK_ICONS: Record<
-  TrackLinkKey,
-  ComponentType<{ className?: string }>
-> = {
+export const TRACK_LINK_ICONS: Record<TrackLinkKey, ComponentType<{ className?: string }>> = {
   soundcloud: SiSoundcloud,
   youtube: SiYoutube,
 };

@@ -1,8 +1,8 @@
 "use client";
 
+import { Check, Download, Loader2, RotateCcw, TriangleAlert } from "lucide-react";
 import { useDownload } from "@/components/offline/OfflineProvider";
 import type { DownloadableTrack } from "@/lib/offline/downloads";
-import { Check, Download, Loader2, RotateCcw, TriangleAlert } from "lucide-react";
 
 // Per-track offline control. Cycles through download → progress → downloaded
 // (tap again to remove), with distinct states for a failed attempt (retry) and
@@ -32,7 +32,11 @@ export function DownloadButton({
     return (
       <button type="button" className={base} aria-label={text} title={text} disabled>
         <Loader2 className="w-4 h-4 animate-spin" />
-        {showLabel ? <span>{text}</span> : pct > 0 && <span className="text-[10px] tabular-nums">{pct}%</span>}
+        {showLabel ? (
+          <span>{text}</span>
+        ) : (
+          pct > 0 && <span className="text-[10px] tabular-nums">{pct}%</span>
+        )}
       </button>
     );
   }

@@ -1,10 +1,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import bcrypt from "bcryptjs";
 
-export async function verifyCredentials(
-  username: string,
-  password: string,
-): Promise<boolean> {
+export async function verifyCredentials(username: string, password: string): Promise<boolean> {
   const { env } = getCloudflareContext();
   const expectedUsername = env.AUTH_USERNAME;
   const expectedHash = env.AUTH_PASSWORD_HASH;

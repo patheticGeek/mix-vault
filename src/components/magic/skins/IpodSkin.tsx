@@ -1,8 +1,9 @@
 "use client";
 
-import type { WinampSkinProps } from "@/components/magic/types";
 import { FastForward, Menu, Pause, Play, Rewind } from "lucide-react";
 import { useRef } from "react";
+import type { WinampSkinProps } from "@/components/magic/types";
+import { handleSeekKeyDown } from "@/lib/seekKeyboard";
 
 // A classic click-wheel iPod. Silver/white plastic body, a rectangular LCD at
 // the top with artwork + title + a Nano-style progress bar and times, and a big
@@ -36,7 +37,7 @@ export function IpodSkin({
   const BARS = 5;
   const eq = Array.from({ length: BARS }, (_, i) => {
     if (peaks.length === 0) return 0.35;
-    const idx = Math.floor(((currentTime * 3 + i) % peaks.length + peaks.length) % peaks.length);
+    const idx = Math.floor((((currentTime * 3 + i) % peaks.length) + peaks.length) % peaks.length);
     return peaks[idx] ?? 0.3;
   });
 
@@ -66,10 +67,19 @@ export function IpodSkin({
         }}
       >
         {/* Status bar */}
-        <div className="flex items-center justify-between mb-2" style={{ fontSize: 9, color: "#3a4c57" }}>
+        <div
+          className="flex items-center justify-between mb-2"
+          style={{ fontSize: 9, color: "#3a4c57" }}
+        >
           <span className="flex items-center gap-1">
-            {isPlaying ? <Play className="w-2.5 h-2.5" fill="currentColor" /> : <Pause className="w-2.5 h-2.5" fill="currentColor" />}
-            <span className="font-semibold tracking-wide">{isBuffering ? "Buffering…" : "Now Playing"}</span>
+            {isPlaying ? (
+              <Play className="w-2.5 h-2.5" fill="currentColor" />
+            ) : (
+              <Pause className="w-2.5 h-2.5" fill="currentColor" />
+            )}
+            <span className="font-semibold tracking-wide">
+              {isBuffering ? "Buffering…" : "Now Playing"}
+            </span>
           </span>
           <span className="flex items-end gap-[2px]" style={{ height: 12 }} aria-hidden>
             {eq.map((v, i) => (
@@ -89,9 +99,14 @@ export function IpodSkin({
         <div className="flex gap-2">
           <div
             className="shrink-0 overflow-hidden"
-            style={{ width: 54, height: 54, borderRadius: 3, border: "1px solid #8c9296", background: "#000" }}
+            style={{
+              width: 54,
+              height: 54,
+              borderRadius: 3,
+              border: "1px solid #8c9296",
+              background: "#000",
+            }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={track.artworkSrc} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0 flex flex-col justify-center">
@@ -111,6 +126,13 @@ export function IpodSkin({
           <div
             ref={seekRef}
             onClick={handleSeek}
+            onKeyDown={(e) => handleSeekKeyDown(e, progress, onSeek)}
+            role="slider"
+            tabIndex={0}
+            aria-label="Seek"
+            aria-valuenow={Math.round(progress * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
             className="relative cursor-pointer"
             style={{
               height: 8,
@@ -122,10 +144,16 @@ export function IpodSkin({
           >
             <div
               className="h-full"
-              style={{ width: `${progress * 100}%`, background: "linear-gradient(180deg, #7fbfe0, #3f8fc0)" }}
+              style={{
+                width: `${progress * 100}%`,
+                background: "linear-gradient(180deg, #7fbfe0, #3f8fc0)",
+              }}
             />
           </div>
-          <div className="flex items-center justify-between mt-1" style={{ fontSize: 9, color: "#3a4c57" }}>
+          <div
+            className="flex items-center justify-between mt-1"
+            style={{ fontSize: 9, color: "#3a4c57" }}
+          >
             <span>{formatTime(currentTime)}</span>
             <span>-{formatTime(Math.max(0, track.duration - currentTime))}</span>
           </div>
@@ -158,7 +186,8 @@ export function IpodSkin({
             borderRadius: "50%",
             background: "radial-gradient(circle at 50% 35%, #fdfdfd 0%, #e7e8eb 60%, #d0d2d7 100%)",
             border: "1px solid #b6b8bd",
-            boxShadow: "inset 0 2px 4px rgba(255,255,255,0.9), inset 0 -4px 8px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.2)",
+            boxShadow:
+              "inset 0 2px 4px rgba(255,255,255,0.9), inset 0 -4px 8px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.2)",
           }}
         >
           {/* MENU */}
@@ -216,7 +245,8 @@ export function IpodSkin({
               width: 74,
               height: 74,
               borderRadius: "50%",
-              background: "radial-gradient(circle at 50% 35%, #fefefe 0%, #e2e3e7 70%, #cfd1d6 100%)",
+              background:
+                "radial-gradient(circle at 50% 35%, #fefefe 0%, #e2e3e7 70%, #cfd1d6 100%)",
               border: "1px solid #b0b2b7",
               boxShadow: "inset 0 1px 2px rgba(255,255,255,0.9), 0 1px 3px rgba(0,0,0,0.25)",
               color: "#6b6e73",

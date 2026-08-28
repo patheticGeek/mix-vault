@@ -1,8 +1,9 @@
 "use client";
 
-import type { WinampSkinProps } from "@/components/magic/types";
 import { Pause, Play } from "lucide-react";
 import { useRef } from "react";
+import type { WinampSkinProps } from "@/components/magic/types";
+import { handleSeekKeyDown } from "@/lib/seekKeyboard";
 
 // The reference skin. A faithful-ish nod to the original Winamp: dark
 // gunmetal chrome, a green LCD readout, a spectrum-analyzer-style bar
@@ -76,9 +77,14 @@ export function ClassicSkin({
       <div className="flex gap-2 mb-2">
         <div
           className="shrink-0 overflow-hidden"
-          style={{ width: 56, height: 56, border: "1px solid #14141a", borderRadius: 2, background: "#000" }}
+          style={{
+            width: 56,
+            height: 56,
+            border: "1px solid #14141a",
+            borderRadius: 2,
+            background: "#000",
+          }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={track.artworkSrc} alt="" className="w-full h-full object-cover" />
         </div>
         <div
@@ -99,7 +105,10 @@ export function ClassicSkin({
               {track.artist}
             </div>
           )}
-          <div className="flex items-center justify-between" style={{ fontSize: 14, letterSpacing: 1 }}>
+          <div
+            className="flex items-center justify-between"
+            style={{ fontSize: 14, letterSpacing: 1 }}
+          >
             <span>{formatTime(currentTime)}</span>
             <span style={{ opacity: 0.6 }}>{formatTime(track.duration)}</span>
           </div>
@@ -109,7 +118,14 @@ export function ClassicSkin({
       {/* Spectrum analyzer */}
       <div
         className="flex items-end gap-[2px] mb-2 px-2"
-        style={{ height: 34, background: "#05100a", border: "1px inset #0a3a1e", borderRadius: 2, paddingTop: 4, paddingBottom: 4 }}
+        style={{
+          height: 34,
+          background: "#05100a",
+          border: "1px inset #0a3a1e",
+          borderRadius: 2,
+          paddingTop: 4,
+          paddingBottom: 4,
+        }}
       >
         {bars.map((v, i) => (
           <div
@@ -131,6 +147,13 @@ export function ClassicSkin({
       <div
         ref={seekRef}
         onClick={handleSeek}
+        onKeyDown={(e) => handleSeekKeyDown(e, progress, onSeek)}
+        role="slider"
+        tabIndex={0}
+        aria-label="Seek"
+        aria-valuenow={Math.round(progress * 100)}
+        aria-valuemin={0}
+        aria-valuemax={100}
         className="relative mb-3 cursor-pointer"
         style={{ height: 10, background: "#14141a", border: "1px inset #000", borderRadius: 2 }}
       >

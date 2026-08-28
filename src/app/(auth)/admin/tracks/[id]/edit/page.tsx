@@ -1,10 +1,10 @@
 "use client";
 
-import { TrackForm } from "@/components/TrackForm";
-import { useTrack } from "@/hooks/queries/useTrack";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { TrackForm } from "@/components/TrackForm";
+import { useTrack } from "@/hooks/queries/useTrack";
 
 export default function EditTrackPage() {
   const { id } = useParams<{ id: string }>();
@@ -21,9 +21,7 @@ export default function EditTrackPage() {
 
         {isLoading && <span className="loading loading-spinner loading-lg" />}
 
-        {error && (
-          <p className="text-error">Failed to load track: {error.message}</p>
-        )}
+        {error && <p className="text-error">Failed to load track: {error.message}</p>}
 
         {track && <TrackForm track={track} />}
       </main>

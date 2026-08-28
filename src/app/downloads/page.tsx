@@ -1,6 +1,6 @@
+import type { Metadata } from "next";
 import { DownloadsClient } from "@/app/downloads/DownloadsClient";
 import { APP_TITLE } from "@/config";
-import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: `Downloads · ${APP_TITLE}`,

@@ -1,9 +1,9 @@
-import type { MagicSkin } from "@/components/magic/types";
 import { ClassicSkin } from "@/components/magic/skins/ClassicSkin";
 import { CyberpunkSkin } from "@/components/magic/skins/CyberpunkSkin";
+import { IpodSkin } from "@/components/magic/skins/IpodSkin";
 import { TerminalSkin } from "@/components/magic/skins/TerminalSkin";
 import { VaporwaveSkin } from "@/components/magic/skins/VaporwaveSkin";
-import { IpodSkin } from "@/components/magic/skins/IpodSkin";
+import type { MagicSkin } from "@/components/magic/types";
 
 // The registry of available player skins. Order here is the order shown in
 // the switcher; the first entry is the default. Each skin is a self-contained

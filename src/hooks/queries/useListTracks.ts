@@ -1,8 +1,8 @@
 "use client";
 
-import { apiClient } from "@/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
 import type { InferResponseType } from "hono/client";
+import { apiClient } from "@/lib/api-client";
 
 type TracksResponse = InferResponseType<typeof apiClient.api.tracks.$get, 200>;
 export type TrackSummary = TracksResponse[number];

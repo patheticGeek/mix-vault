@@ -10,10 +10,7 @@
 const AUDIO_DIR = "audio";
 
 export function isOpfsSupported(): boolean {
-  return (
-    typeof navigator !== "undefined" &&
-    typeof navigator.storage?.getDirectory === "function"
-  );
+  return typeof navigator !== "undefined" && typeof navigator.storage?.getDirectory === "function";
 }
 
 async function audioDir(): Promise<FileSystemDirectoryHandle> {

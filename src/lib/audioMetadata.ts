@@ -12,7 +12,11 @@ export interface AudioFileMetadata {
 export async function extractAudioMetadata(file: File): Promise<AudioFileMetadata> {
   try {
     const { common } = await parseBlob(file);
-    const recordedAt = common.date ? new Date(common.date) : common.year ? new Date(common.year, 0, 1) : undefined;
+    const recordedAt = common.date
+      ? new Date(common.date)
+      : common.year
+        ? new Date(common.year, 0, 1)
+        : undefined;
 
     return {
       recordedAt: recordedAt && !Number.isNaN(recordedAt.getTime()) ? recordedAt : undefined,

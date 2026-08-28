@@ -1,10 +1,10 @@
 "use client";
 
-import { usePlayer } from "@/components/PlayerProvider";
-import { formatDuration } from "@/lib/time";
 import { ChevronDown, ChevronUp, Loader2, Pause, Play } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { usePlayer } from "@/components/PlayerProvider";
+import { formatDuration } from "@/lib/time";
 
 // How long the fly in/out transition takes, kept in sync with the
 // `duration-300` transition class below so the exit unmount timer matches
@@ -61,6 +61,7 @@ export function MiniPlayer() {
         entered ? "translate-y-0 opacity-100" : "translate-y-24 opacity-0"
       }`}
     >
+      {/* biome-ignore lint/a11y/useSemanticElements: contains nested <button>s (toggle/next controls), which isn't valid inside a real <button> */}
       <div
         role="button"
         tabIndex={0}
@@ -76,8 +77,11 @@ export function MiniPlayer() {
       >
         <div className="relative flex items-center gap-3 p-2 pr-2">
           <div className="relative w-10 h-10 shrink-0 rounded overflow-hidden bg-base-300">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={currentTrack.artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <img
+              src={currentTrack.artworkSrc}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
           </div>
 
           <button
@@ -152,10 +156,15 @@ export function MiniPlayer() {
                       )}
                     </span>
                     <span className="relative w-7 h-7 shrink-0 rounded overflow-hidden bg-base-200">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={t.artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                      <img
+                        src={t.artworkSrc}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
                     </span>
-                    <span className={`min-w-0 flex-1 truncate text-sm ${isCurrent ? "font-semibold" : ""}`}>
+                    <span
+                      className={`min-w-0 flex-1 truncate text-sm ${isCurrent ? "font-semibold" : ""}`}
+                    >
                       {t.title}
                     </span>
                     <span className="shrink-0 text-xs tabular-nums text-base-content/40">

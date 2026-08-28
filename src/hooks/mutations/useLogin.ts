@@ -1,8 +1,8 @@
 "use client";
 
-import { apiClient } from "@/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InferRequestType, InferResponseType } from "hono/client";
+import { apiClient } from "@/lib/api-client";
 
 const loginEndpoint = apiClient.api.auth.login.$post;
 
@@ -13,7 +13,8 @@ async function login(credentials: LoginRequest): Promise<LoginSuccess> {
   const res = await loginEndpoint({ json: credentials });
   const data: unknown = await res.json();
   if (!res.ok) {
-    const hasErrorMessage = data && typeof data === "object" && "error" in data && typeof data.error === "string";
+    const hasErrorMessage =
+      data && typeof data === "object" && "error" in data && typeof data.error === "string";
     throw new Error(hasErrorMessage ? (data as { error: string }).error : "Login failed");
   }
   return data as LoginSuccess;

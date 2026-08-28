@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 // Re-downloads every track's audio from R2 into ./local-audio, re-decodes it
 // with ffmpeg, and rewrites waveform_preview in the local D1 database using
 // the RMS-based peak logic from src/lib/waveform.ts (kept in sync manually —
@@ -9,10 +10,10 @@
 //   node scripts/regenerate-waveforms.mjs            (targets local D1)
 //   node scripts/regenerate-waveforms.mjs --remote    (targets prod D1)
 
-import { AwsClient } from "aws4fetch";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { AwsClient } from "aws4fetch";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const AUDIO_DIR = path.join(ROOT, "local-audio");
@@ -73,12 +74,9 @@ async function downloadAudio(aws, endpoint, key, destPath) {
 // via ffmpeg, then computes PEAK_COUNT RMS buckets — mirroring the
 // browser-side logic in src/lib/waveform.ts.
 function computePeaks(filePath) {
-  const result = spawnSync("ffmpeg", [
-    "-i", filePath,
-    "-f", "f32le",
-    "-ac", "1",
-    "-",
-  ], { maxBuffer: 1024 * 1024 * 1024 });
+  const result = spawnSync("ffmpeg", ["-i", filePath, "-f", "f32le", "-ac", "1", "-"], {
+    maxBuffer: 1024 * 1024 * 1024,
+  });
   if (result.status !== 0) {
     throw new Error(`ffmpeg decode failed for ${filePath}:\n${result.stderr}`);
   }

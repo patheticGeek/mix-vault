@@ -1,8 +1,17 @@
 "use client";
 
-import type { SkinTheme } from "@/components/magic/types";
-import { GripVertical, ListMusic, Pause, Play, SkipBack, SkipForward, Trash2, X } from "lucide-react";
+import {
+  GripVertical,
+  ListMusic,
+  Pause,
+  Play,
+  SkipBack,
+  SkipForward,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useRef, useState } from "react";
+import type { SkinTheme } from "@/components/magic/types";
 
 export interface QueuePanelItem {
   id: string;
@@ -115,13 +124,35 @@ export function QueuePanel({
           </button>
         </div>
         <div className="flex items-center" style={{ color: theme.text }}>
-          <button type="button" onClick={onPrev} disabled={!hasPrev} aria-label="Previous track" className={transportBtn}>
+          <button
+            type="button"
+            onClick={onPrev}
+            disabled={!hasPrev}
+            aria-label="Previous track"
+            className={transportBtn}
+          >
             <SkipBack className="h-4 w-4" fill="currentColor" />
           </button>
-          <button type="button" onClick={onTogglePlay} disabled={items.length === 0} aria-label={isPlaying ? "Pause" : "Play"} className={transportBtn}>
-            {isPlaying ? <Pause className="h-4 w-4" fill="currentColor" /> : <Play className="h-4 w-4" fill="currentColor" />}
+          <button
+            type="button"
+            onClick={onTogglePlay}
+            disabled={items.length === 0}
+            aria-label={isPlaying ? "Pause" : "Play"}
+            className={transportBtn}
+          >
+            {isPlaying ? (
+              <Pause className="h-4 w-4" fill="currentColor" />
+            ) : (
+              <Play className="h-4 w-4" fill="currentColor" />
+            )}
           </button>
-          <button type="button" onClick={onNext} disabled={!hasNext} aria-label="Next track" className={transportBtn}>
+          <button
+            type="button"
+            onClick={onNext}
+            disabled={!hasNext}
+            aria-label="Next track"
+            className={transportBtn}
+          >
             <SkipForward className="h-4 w-4" fill="currentColor" />
           </button>
         </div>
@@ -146,7 +177,9 @@ export function QueuePanel({
           const dropLine = [
             showTopLine ? `inset 0 3px 0 0 ${DROP_LINE}` : "",
             showBottomLine ? `inset 0 -3px 0 0 ${DROP_LINE}` : "",
-          ].filter(Boolean).join(", ");
+          ]
+            .filter(Boolean)
+            .join(", ");
           return (
             <li
               key={t.id}
@@ -192,7 +225,10 @@ export function QueuePanel({
                 }}
               >
                 <GripVertical className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.4 }} />
-                <span className="w-4 shrink-0 text-center text-xs tabular-nums" style={{ opacity: 0.7 }}>
+                <span
+                  className="w-4 shrink-0 text-center text-xs tabular-nums"
+                  style={{ opacity: 0.7 }}
+                >
                   {isCurrent && isPlaying ? (
                     <Pause className="mx-auto h-3 w-3" fill="currentColor" />
                   ) : isCurrent ? (
@@ -201,11 +237,21 @@ export function QueuePanel({
                     i + 1
                   )}
                 </span>
-                <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded" style={{ background: "rgba(128,128,128,0.2)" }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={t.artworkSrc} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+                <span
+                  className="relative h-8 w-8 shrink-0 overflow-hidden rounded"
+                  style={{ background: "rgba(128,128,128,0.2)" }}
+                >
+                  <img
+                    src={t.artworkSrc}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover"
+                    draggable={false}
+                  />
                 </span>
-                <span className="min-w-0 flex-1 truncate text-sm" style={{ fontWeight: isCurrent ? 600 : 400 }}>
+                <span
+                  className="min-w-0 flex-1 truncate text-sm"
+                  style={{ fontWeight: isCurrent ? 600 : 400 }}
+                >
                   {t.title}
                 </span>
                 {/* Room on the right so the remove button doesn't cover the time. */}

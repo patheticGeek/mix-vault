@@ -16,7 +16,8 @@ export function useAuth() {
     isLoggingIn: loginMutation.isPending,
     isLoggingOut: logoutMutation.isPending,
     loginError: loginMutation.error?.message ?? null,
-    login: (username: string, password: string) => loginMutation.mutateAsync({ username, password }),
+    login: (username: string, password: string) =>
+      loginMutation.mutateAsync({ username, password }),
     logout: () => logoutMutation.mutateAsync(),
   };
 }

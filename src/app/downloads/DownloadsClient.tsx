@@ -1,12 +1,12 @@
 "use client";
 
-import { useOffline } from "@/components/offline/OfflineProvider";
-import { usePlayer, type PlayerTrack } from "@/components/PlayerProvider";
-import { estimateUsage } from "@/lib/offline/downloads";
-import { listDownloads, type DownloadRecord } from "@/lib/offline/idb";
-import { formatDuration } from "@/lib/time";
 import { Download, HardDrive, Pause, Play, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useOffline } from "@/components/offline/OfflineProvider";
+import { type PlayerTrack, usePlayer } from "@/components/PlayerProvider";
+import { estimateUsage } from "@/lib/offline/downloads";
+import { type DownloadRecord, listDownloads } from "@/lib/offline/idb";
+import { formatDuration } from "@/lib/time";
 
 function formatBytes(bytes: number): string {
   if (!bytes) return "0 MB";
@@ -39,7 +39,7 @@ export function DownloadsClient() {
 
   // The set of finished downloads, as a stable key so the loader re-runs when a
   // download completes or a track is removed (both change `states`).
-  const doneKey = useMemo(
+  const _doneKey = useMemo(
     () =>
       Object.entries(states)
         .filter(([, s]) => s.status === "done")
@@ -69,7 +69,7 @@ export function DownloadsClient() {
     return () => {
       cancelled = true;
     };
-  }, [supported, doneKey]);
+  }, [supported]);
 
   // Artwork blobs turned into object URLs for the thumbnails, revoked on change.
   const [artUrls, setArtUrls] = useState<Record<string, string>>({});
@@ -178,14 +178,11 @@ export function DownloadsClient() {
               >
                 <button
                   type="button"
-                  onClick={() =>
-                    isCurrent ? toggle(recordToTrack(record)) : playRecord(index)
-                  }
+                  onClick={() => (isCurrent ? toggle(recordToTrack(record)) : playRecord(index))}
                   aria-label={showPause ? "Pause" : "Play"}
                   className="relative w-12 h-12 shrink-0 rounded overflow-hidden bg-base-300 flex items-center justify-center group"
                 >
                   {art && (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={art} alt="" className="absolute inset-0 w-full h-full object-cover" />
                   )}
                   <span className="relative flex items-center justify-center w-8 h-8 rounded-full bg-base-100/90 text-base-content">

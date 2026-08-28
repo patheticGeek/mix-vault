@@ -1,8 +1,8 @@
+import { desc, eq } from "drizzle-orm";
 import { HomeClient } from "@/app/HomeClient";
 import type { TrackSummary } from "@/hooks/queries/useListTracks";
 import { getDb, tracks } from "@/lib/db";
 import { normalizeTrackSummary } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
 
 const RECENT_TRACKS_LIMIT = 5;
 
@@ -26,9 +26,7 @@ export default async function Home() {
   // Serialized to match the shape the client's own fetch would get back
   // over JSON (dates as strings), so react-query can treat this the same
   // as data it fetched itself once the client-side query resolves.
-  const initialTracks: TrackSummary[] = JSON.parse(
-    JSON.stringify(rows.map(normalizeTrackSummary)),
-  );
+  const initialTracks: TrackSummary[] = JSON.parse(JSON.stringify(rows.map(normalizeTrackSummary)));
 
   return <HomeClient initialTracks={initialTracks} />;
 }

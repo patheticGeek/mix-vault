@@ -1,8 +1,8 @@
 "use client";
 
-import { useAuth } from "@/hooks/auth/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useAuth } from "@/hooks/auth/useAuth";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const router = useRouter();

@@ -1,7 +1,7 @@
 "use client";
 
-import { useAuth } from "@/hooks/auth/useAuth";
 import Link from "next/link";
+import { useAuth } from "@/hooks/auth/useAuth";
 
 export function AuthStatus() {
   const { user, isLoading, isLoggingOut, logout } = useAuth();
@@ -13,7 +13,12 @@ export function AuthStatus() {
       <Link href="/admin" className="text-sm text-base-content/70 hover:underline">
         {user.username}
       </Link>
-      <button onClick={() => logout()} disabled={isLoggingOut} className="btn btn-ghost btn-sm">
+      <button
+        type="button"
+        onClick={() => logout()}
+        disabled={isLoggingOut}
+        className="btn btn-ghost btn-sm"
+      >
         {isLoggingOut ? "Signing out..." : "Sign out"}
       </button>
     </div>

@@ -1,8 +1,9 @@
 "use client";
 
-import type { WinampSkinProps } from "@/components/magic/types";
 import { Pause, Play } from "lucide-react";
 import { useRef } from "react";
+import type { WinampSkinProps } from "@/components/magic/types";
+import { handleSeekKeyDown } from "@/lib/seekKeyboard";
 
 // A E S T H E T I C. Hot pink + cyan + purple, chrome gradient title, a
 // pulsing retro sun sinking into a neon grid horizon, glossy 80s Miami vibes.
@@ -73,7 +74,12 @@ export function VaporwaveSkin({
       <div className="flex items-center justify-between px-1 mb-3">
         <span
           className="vw-chrome"
-          style={{ fontSize: 11, fontWeight: 800, letterSpacing: 4, textShadow: "0 0 8px rgba(1,205,254,.4)" }}
+          style={{
+            fontSize: 11,
+            fontWeight: 800,
+            letterSpacing: 4,
+            textShadow: "0 0 8px rgba(1,205,254,.4)",
+          }}
         >
           V A P O R W A V E
         </span>
@@ -85,7 +91,11 @@ export function VaporwaveSkin({
       {/* Sunset + grid stage with artwork */}
       <div
         className="relative overflow-hidden mb-3"
-        style={{ borderRadius: 10, border: "1px solid rgba(1,205,254,.4)", background: "linear-gradient(180deg,#3a0d5c 0%,#c31d80 55%,#ff9e6d 100%)" }}
+        style={{
+          borderRadius: 10,
+          border: "1px solid rgba(1,205,254,.4)",
+          background: "linear-gradient(180deg,#3a0d5c 0%,#c31d80 55%,#ff9e6d 100%)",
+        }}
       >
         {/* Pulsing sun */}
         <div
@@ -131,7 +141,6 @@ export function VaporwaveSkin({
               animationPlayState: isPlaying ? "running" : "paused",
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={track.artworkSrc} alt="" className="w-full h-full object-cover" />
           </div>
         </div>
@@ -139,11 +148,17 @@ export function VaporwaveSkin({
 
       {/* Track info */}
       <div className="text-center mb-3 px-1">
-        <div className="vw-title truncate" style={{ fontSize: 18, fontWeight: 900, letterSpacing: 1 }}>
+        <div
+          className="vw-title truncate"
+          style={{ fontSize: 18, fontWeight: 900, letterSpacing: 1 }}
+        >
           {track.title}
         </div>
         {track.artist && (
-          <div className="truncate" style={{ fontSize: 12, color: "#01cdfe", textShadow: "0 0 6px rgba(1,205,254,.6)" }}>
+          <div
+            className="truncate"
+            style={{ fontSize: 12, color: "#01cdfe", textShadow: "0 0 6px rgba(1,205,254,.6)" }}
+          >
             {track.artist}
           </div>
         )}
@@ -170,21 +185,48 @@ export function VaporwaveSkin({
       <div
         ref={seekRef}
         onClick={handleSeek}
+        onKeyDown={(e) => handleSeekKeyDown(e, progress, onSeek)}
+        role="slider"
+        tabIndex={0}
+        aria-label="Seek"
+        aria-valuenow={Math.round(progress * 100)}
+        aria-valuemin={0}
+        aria-valuemax={100}
         className="relative mb-2 cursor-pointer"
-        style={{ height: 8, borderRadius: 999, background: "rgba(255,255,255,.12)", border: "1px solid rgba(1,205,254,.3)" }}
+        style={{
+          height: 8,
+          borderRadius: 999,
+          background: "rgba(255,255,255,.12)",
+          border: "1px solid rgba(1,205,254,.3)",
+        }}
       >
         <div
           className="h-full"
-          style={{ width: `${progress * 100}%`, borderRadius: 999, background: "linear-gradient(90deg,#01cdfe,#ff71ce,#b967ff)", boxShadow: "0 0 10px rgba(255,113,206,.8)" }}
+          style={{
+            width: `${progress * 100}%`,
+            borderRadius: 999,
+            background: "linear-gradient(90deg,#01cdfe,#ff71ce,#b967ff)",
+            boxShadow: "0 0 10px rgba(255,113,206,.8)",
+          }}
         />
         <div
           className="absolute top-1/2 -translate-y-1/2"
-          style={{ left: `calc(${progress * 100}% - 6px)`, width: 12, height: 12, borderRadius: "50%", background: "#fff", boxShadow: "0 0 10px #01cdfe" }}
+          style={{
+            left: `calc(${progress * 100}% - 6px)`,
+            width: 12,
+            height: 12,
+            borderRadius: "50%",
+            background: "#fff",
+            boxShadow: "0 0 10px #01cdfe",
+          }}
         />
       </div>
 
       {/* Times */}
-      <div className="flex justify-between mb-3" style={{ fontSize: 11, color: "#ffd1f5", letterSpacing: 1 }}>
+      <div
+        className="flex justify-between mb-3"
+        style={{ fontSize: 11, color: "#ffd1f5", letterSpacing: 1 }}
+      >
         <span>{formatTime(currentTime)}</span>
         <span style={{ opacity: 0.7 }}>{formatTime(track.duration)}</span>
       </div>

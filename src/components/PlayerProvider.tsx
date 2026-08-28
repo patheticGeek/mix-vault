@@ -1,8 +1,16 @@
 "use client";
 
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { apiClient } from "@/lib/api-client";
 import { getOfflineArtworkUrl, getOfflineAudioUrl } from "@/lib/offline/downloads";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 export interface PlayerTrack {
   id: string;
@@ -159,7 +167,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // the persistence effects are allowed to write (hydratedRef).
   useEffect(() => {
     const saved = loadPersisted();
-    if (saved && saved.currentTrack) {
+    if (saved?.currentTrack) {
       queueRef.current = saved.queue;
       setQueueState(saved.queue);
       currentTrackRef.current = saved.currentTrack;
@@ -293,57 +301,69 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   // Append to the end of the queue. With nothing playing yet, there's no
   // queue to append to, so it just starts the track.
-  const addToQueue = useCallback((track: PlayerTrack) => {
-    const q = queueRef.current;
-    if (q.length === 0 || !currentTrackRef.current) {
-      commitQueue([track]);
-      setCurrentTime(0);
-      setCurrentTrack(track);
-      setIsPlaying(true);
-      return;
-    }
-    if (q.some((t) => t.id === track.id)) return; // already queued
-    commitQueue([...q, track]);
-  }, [commitQueue]);
+  const addToQueue = useCallback(
+    (track: PlayerTrack) => {
+      const q = queueRef.current;
+      if (q.length === 0 || !currentTrackRef.current) {
+        commitQueue([track]);
+        setCurrentTime(0);
+        setCurrentTrack(track);
+        setIsPlaying(true);
+        return;
+      }
+      if (q.some((t) => t.id === track.id)) return; // already queued
+      commitQueue([...q, track]);
+    },
+    [commitQueue],
+  );
 
   // Insert right after the current track so it plays next. Same empty-queue
   // fallback as addToQueue.
-  const playNext = useCallback((track: PlayerTrack) => {
-    const q = queueRef.current;
-    if (q.length === 0 || !currentTrackRef.current) {
-      commitQueue([track]);
-      setCurrentTime(0);
-      setCurrentTrack(track);
-      setIsPlaying(true);
-      return;
-    }
-    if (q.some((t) => t.id === track.id)) return; // already queued
-    const idx = q.findIndex((t) => t.id === currentTrackRef.current?.id);
-    const at = idx < 0 ? q.length : idx + 1;
-    commitQueue([...q.slice(0, at), track, ...q.slice(at)]);
-  }, [commitQueue]);
+  const playNext = useCallback(
+    (track: PlayerTrack) => {
+      const q = queueRef.current;
+      if (q.length === 0 || !currentTrackRef.current) {
+        commitQueue([track]);
+        setCurrentTime(0);
+        setCurrentTrack(track);
+        setIsPlaying(true);
+        return;
+      }
+      if (q.some((t) => t.id === track.id)) return; // already queued
+      const idx = q.findIndex((t) => t.id === currentTrackRef.current?.id);
+      const at = idx < 0 ? q.length : idx + 1;
+      commitQueue([...q.slice(0, at), track, ...q.slice(at)]);
+    },
+    [commitQueue],
+  );
 
   // Move a queue entry from one position to another (drag-and-drop reorder).
-  const reorderQueue = useCallback((from: number, to: number) => {
-    const q = queueRef.current;
-    if (from === to || from < 0 || to < 0 || from >= q.length || to >= q.length) return;
-    const nextQueue = [...q];
-    const [moved] = nextQueue.splice(from, 1);
-    nextQueue.splice(to, 0, moved);
-    commitQueue(nextQueue);
-  }, [commitQueue]);
+  const reorderQueue = useCallback(
+    (from: number, to: number) => {
+      const q = queueRef.current;
+      if (from === to || from < 0 || to < 0 || from >= q.length || to >= q.length) return;
+      const nextQueue = [...q];
+      const [moved] = nextQueue.splice(from, 1);
+      nextQueue.splice(to, 0, moved);
+      commitQueue(nextQueue);
+    },
+    [commitQueue],
+  );
 
   // Move `offset` steps through the queue relative to the current track,
   // starting playback there. Returns whether it actually moved, so callers
   // (like auto-advance) can decide what to do at the ends.
-  const playAtOffset = useCallback((offset: number) => {
-    const q = queueRef.current;
-    const idx = q.findIndex((t) => t.id === currentTrackRef.current?.id);
-    const target = idx + offset;
-    if (idx < 0 || target < 0 || target >= q.length) return false;
-    playAt(target);
-    return true;
-  }, [playAt]);
+  const playAtOffset = useCallback(
+    (offset: number) => {
+      const q = queueRef.current;
+      const idx = q.findIndex((t) => t.id === currentTrackRef.current?.id);
+      const target = idx + offset;
+      if (idx < 0 || target < 0 || target >= q.length) return false;
+      playAt(target);
+      return true;
+    },
+    [playAt],
+  );
 
   const next = useCallback(() => {
     playAtOffset(1);
@@ -365,7 +385,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // fresh media element resets to 1.
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
-  }, [volume, currentTrack]);
+  }, [volume]);
 
   const seek = useCallback((fraction: number) => {
     const audio = audioRef.current;
@@ -405,7 +425,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // Queue shrank but what's playing is fine — don't disturb playback.
       if (currentKept) return;
 
-      const oldIdx = q.findIndex((t) => t.id === current!.id);
+      const oldIdx = q.findIndex((t) => t.id === current?.id);
       let replacement: PlayerTrack | null = null;
       for (let i = oldIdx; i >= 0 && i < q.length; i++) {
         if (keep(q[i])) {
@@ -510,9 +530,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
     // Prefer the downloaded artwork blob so the lock screen has art offline.
     const artworkSrc =
-      offlineArtworkRef.current?.id === track.id
-        ? offlineArtworkRef.current.url
-        : track.artworkSrc;
+      offlineArtworkRef.current?.id === track.id ? offlineArtworkRef.current.url : track.artworkSrc;
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.title,
       artwork: artworkSrc ? [{ src: artworkSrc, sizes: "512x512" }] : [],
@@ -686,7 +704,32 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       prev,
       discard,
     }),
-    [currentTrack, isPlaying, currentTime, isBuffering, volume, queue, queueIndex, hasNext, hasPrev, play, pause, toggle, seek, setVolume, playQueue, playAt, addToQueue, playNext, reorderQueue, removeFromQueue, clearQueue, next, prev, discard],
+    [
+      currentTrack,
+      isPlaying,
+      currentTime,
+      isBuffering,
+      volume,
+      queue,
+      queueIndex,
+      hasNext,
+      hasPrev,
+      play,
+      pause,
+      toggle,
+      seek,
+      setVolume,
+      playQueue,
+      playAt,
+      addToQueue,
+      playNext,
+      reorderQueue,
+      removeFromQueue,
+      clearQueue,
+      next,
+      prev,
+      discard,
+    ],
   );
 
   // Play the downloaded copy when this track's offline audio has resolved;
@@ -700,6 +743,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   return (
     <PlayerContext.Provider value={value}>
       {children}
+      {/* biome-ignore lint/a11y/useMediaCaption: music playback, not speech/video — there's no caption track to provide */}
       <audio
         ref={audioRef}
         src={audioSrc}

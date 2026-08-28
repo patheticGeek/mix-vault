@@ -1,7 +1,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { drizzle } from "drizzle-orm/d1";
 import { eq } from "drizzle-orm";
-import { NextResponse, type NextRequest } from "next/server";
+import { drizzle } from "drizzle-orm/d1";
+import { type NextRequest, NextResponse } from "next/server";
 import { tracks } from "@/lib/db/schema";
 
 // Adds `X-Robots-Tag: noindex, nofollow` to non-public track pages, the HTTP

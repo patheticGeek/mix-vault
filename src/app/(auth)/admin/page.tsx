@@ -1,9 +1,9 @@
 "use client";
 
-import { CopyLinkButton } from "@/components/CopyLinkButton";
-import { useListTracks } from "@/hooks/queries/useListTracks";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { CopyLinkButton } from "@/components/CopyLinkButton";
+import { useListTracks } from "@/hooks/queries/useListTracks";
 
 // Explicit palette colors rather than the theme's success/warning/error
 // tokens, which render too washed-out (green/yellow look alike, red reads
@@ -33,13 +33,9 @@ export default function AdminPage() {
 
         {isLoading && <span className="loading loading-spinner loading-lg" />}
 
-        {error && (
-          <p className="text-error">Failed to load tracks: {error.message}</p>
-        )}
+        {error && <p className="text-error">Failed to load tracks: {error.message}</p>}
 
-        {tracks && tracks.length === 0 && (
-          <p className="text-base-content/60">No tracks yet.</p>
-        )}
+        {tracks && tracks.length === 0 && <p className="text-base-content/60">No tracks yet.</p>}
 
         {tracks && tracks.length > 0 && (
           <ul className="list bg-base-200 rounded-box w-full">

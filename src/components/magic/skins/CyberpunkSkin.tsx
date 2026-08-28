@@ -1,8 +1,9 @@
 "use client";
 
-import type { WinampSkinProps } from "@/components/magic/types";
 import { Loader2, Pause, Play } from "lucide-react";
 import { useRef } from "react";
+import type { WinampSkinProps } from "@/components/magic/types";
+import { handleSeekKeyDown } from "@/lib/seekKeyboard";
 
 // A neon cyberpunk HUD: near-black chrome with vivid cyan + magenta glow,
 // scanlines, glitchy angular framing and a waveform driven by real peaks.
@@ -56,13 +57,15 @@ export function CyberpunkSkin({
       <div
         className="pointer-events-none absolute inset-0 z-10"
         style={{
-          background: "repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 2px, transparent 3px)",
+          background:
+            "repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 2px, transparent 3px)",
           mixBlendMode: "overlay",
         }}
       />
 
       {/* Header */}
       <div className="mb-3 flex items-center justify-between text-[10px] tracking-[0.35em]">
+        {/* biome-ignore lint/suspicious/noCommentText: "//SYS" is literal UI text, not an accidental comment */}
         <span style={{ color: cyan, textShadow: `0 0 8px ${cyan}` }}>MIXVAULT//SYS</span>
         <span
           className="animate-pulse"
@@ -84,8 +87,12 @@ export function CyberpunkSkin({
             clipPath: "polygon(0 0, 100% 0, 100% 100%, 12% 100%, 0 82%)",
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={track.artworkSrc} alt="" className="h-full w-full object-cover" style={{ filter: "saturate(1.3) contrast(1.1)" }} />
+          <img
+            src={track.artworkSrc}
+            alt=""
+            className="h-full w-full object-cover"
+            style={{ filter: "saturate(1.3) contrast(1.1)" }}
+          />
         </div>
         <div className="flex min-w-0 flex-1 flex-col justify-center">
           <div
@@ -95,11 +102,17 @@ export function CyberpunkSkin({
             {track.title}
           </div>
           {track.artist && (
-            <div className="truncate text-xs" style={{ color: magenta, textShadow: `0 0 8px ${magenta}88` }}>
+            <div
+              className="truncate text-xs"
+              style={{ color: magenta, textShadow: `0 0 8px ${magenta}88` }}
+            >
               {track.artist}
             </div>
           )}
-          <div className="mt-1 flex justify-between text-[11px] tracking-widest" style={{ color: cyan }}>
+          <div
+            className="mt-1 flex justify-between text-[11px] tracking-widest"
+            style={{ color: cyan }}
+          >
             <span style={{ textShadow: `0 0 6px ${cyan}` }}>{formatTime(currentTime)}</span>
             <span className="opacity-50">{formatTime(track.duration)}</span>
           </div>
@@ -134,6 +147,13 @@ export function CyberpunkSkin({
       <div
         ref={seekRef}
         onClick={handleSeek}
+        onKeyDown={(e) => handleSeekKeyDown(e, progress, onSeek)}
+        role="slider"
+        tabIndex={0}
+        aria-label="Seek"
+        aria-valuenow={Math.round(progress * 100)}
+        aria-valuemin={0}
+        aria-valuemax={100}
         className="relative mb-4 cursor-pointer"
         style={{ height: 8, background: "#050810", border: `1px solid ${cyan}55` }}
       >

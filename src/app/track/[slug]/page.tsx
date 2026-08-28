@@ -1,13 +1,13 @@
-import { TrackPageClient } from "@/app/track/[slug]/TrackPageClient";
-import { APP_TITLE } from "@/config";
-import { getServerSession } from "@/lib/auth/getServerSession";
-import type { TrackBySlugResponse } from "@/hooks/queries/useTrackBySlug";
-import { assetUrl } from "@/lib/cdn";
-import { getDb, tracks } from "@/lib/db";
-import { normalizeTrackRow } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { cache } from "react";
+import { TrackPageClient } from "@/app/track/[slug]/TrackPageClient";
+import { APP_TITLE } from "@/config";
+import type { TrackBySlugResponse } from "@/hooks/queries/useTrackBySlug";
+import { getServerSession } from "@/lib/auth/getServerSession";
+import { assetUrl } from "@/lib/cdn";
+import { getDb, tracks } from "@/lib/db";
+import { normalizeTrackRow } from "@/lib/db/schema";
 
 // cache() dedupes this within a single request, so generateMetadata and the
 // page body below share one DB query instead of two. Private tracks are only

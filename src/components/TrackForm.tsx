@@ -1,5 +1,9 @@
 "use client";
 
+import { Loader2, Pause, Play } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { usePlayer } from "@/components/PlayerProvider";
 import { Waveform } from "@/components/Waveform";
@@ -12,18 +16,17 @@ import { useWaveform } from "@/hooks/queries/useWaveform";
 import { extractAudioMetadata } from "@/lib/audioMetadata";
 import { assetUrl } from "@/lib/cdn";
 import { formatDuration } from "@/lib/time";
-import { TRACK_LINK_KEYS, type TrackLinkKey } from "@/lib/trackLinks";
 import { DEFAULT_ARTWORK_KEY } from "@/lib/trackAssetKey";
+import { TRACK_LINK_KEYS, type TrackLinkKey } from "@/lib/trackLinks";
 import { extractWaveformPeaks, type WaveformAnalysis } from "@/lib/waveform";
-import { Loader2, Pause, Play } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
 
 // A static placeholder shape for the waveform slot before any audio is
 // uploaded — deterministic (no Math.random/Date.now) so it renders the same
 // on the server and client.
-const DEMO_WAVEFORM_PEAKS = Array.from({ length: 40 }, (_, i) => 0.3 + 0.7 * Math.abs(Math.sin(i * 0.5)));
+const DEMO_WAVEFORM_PEAKS = Array.from(
+  { length: 40 },
+  (_, i) => 0.3 + 0.7 * Math.abs(Math.sin(i * 0.5)),
+);
 
 function slugify(input: string): string {
   return input
@@ -293,9 +296,9 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
   return (
     <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
       <div className="form-control">
-        <label className="label">
+        <span className="label">
           <span className="label-text">Visibility</span>
-        </label>
+        </span>
         <div className="join w-full">
           {STATUS_OPTIONS.map((option) => {
             const isActive = statusValue === option.value;
@@ -355,7 +358,11 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           <div className="relative flex-1 min-w-0 h-24 rounded bg-base-300 overflow-hidden flex items-center justify-center px-3">
             <div className="absolute inset-0 flex items-end gap-px px-4 py-6 opacity-20">
               {DEMO_WAVEFORM_PEAKS.map((peak, i) => (
-                <div key={i} className="flex-1 bg-base-content rounded-sm" style={{ height: `${peak * 100}%` }} />
+                <div
+                  key={i}
+                  className="flex-1 bg-base-content rounded-sm"
+                  style={{ height: `${peak * 100}%` }}
+                />
               ))}
             </div>
             <span className="relative flex items-center gap-2 text-sm font-medium text-base-content/60">
@@ -371,10 +378,16 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           >
             <div className="absolute inset-0 flex items-end gap-px px-4 py-6 opacity-20">
               {DEMO_WAVEFORM_PEAKS.map((peak, i) => (
-                <div key={i} className="flex-1 bg-base-content rounded-sm" style={{ height: `${peak * 100}%` }} />
+                <div
+                  key={i}
+                  className="flex-1 bg-base-content rounded-sm"
+                  style={{ height: `${peak * 100}%` }}
+                />
               ))}
             </div>
-            <span className="relative text-sm font-medium text-base-content/60">Upload audio file</span>
+            <span className="relative text-sm font-medium text-base-content/60">
+              Upload audio file
+            </span>
           </button>
         )}
 
@@ -385,7 +398,6 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
           className="relative w-24 h-24 shrink-0 rounded overflow-hidden bg-base-300"
         >
           {artworkSrc ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img src={artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
           ) : (
             <span className="absolute inset-0 flex items-center justify-center text-center text-xs font-medium text-base-content/60 px-2">
@@ -472,9 +484,9 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
       </div>
 
       <div className="form-control">
-        <label className="label">
+        <span className="label">
           <span className="label-text">Links</span>
-        </label>
+        </span>
         <div className="space-y-2">
           {TRACK_LINK_KEYS.map((key) => {
             const Icon = TRACK_LINK_ICONS[key];
@@ -534,11 +546,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
 
       {!isEditMode && createTrack.isPending && (
         <div className="space-y-1">
-          <progress
-            className="progress progress-primary w-full"
-            value={uploadProgress}
-            max={100}
-          />
+          <progress className="progress progress-primary w-full" value={uploadProgress} max={100} />
           <p className="text-sm text-base-content/60">{uploadProgress}%</p>
         </div>
       )}
@@ -560,11 +568,7 @@ export function TrackForm({ track }: { track?: TrackResponse }) {
                   ? "Uploading..."
                   : "Upload track"}
           </button>
-          <button
-            type="button"
-            onClick={() => router.push("/admin")}
-            className="btn btn-ghost"
-          >
+          <button type="button" onClick={() => router.push("/admin")} className="btn btn-ghost">
             Cancel
           </button>
         </div>
