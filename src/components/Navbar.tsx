@@ -1,10 +1,10 @@
 "use client";
 
-import { AuthStatus } from "@/components/AuthStatus";
-import { APP_TITLE } from "@/config";
 import { AudioLines, Download } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AuthStatus } from "@/components/AuthStatus";
+import { APP_TITLE } from "@/config";
 
 export function Navbar() {
   // The full-page player is a full-bleed, chrome-free experience — no navbar.

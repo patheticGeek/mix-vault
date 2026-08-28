@@ -1,9 +1,9 @@
 "use client";
 
-import { getOfflineWaveform } from "@/lib/offline/downloads";
-import { apiClient } from "@/lib/api-client";
-import { parsePeaks } from "@/lib/waveform";
 import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
+import { getOfflineWaveform } from "@/lib/offline/downloads";
+import { parsePeaks } from "@/lib/waveform";
 
 const waveformEndpoint = apiClient.api.tracks[":id"].waveform.$get;
 
@@ -30,7 +30,7 @@ async function fetchWaveform(id: string): Promise<number[]> {
 export function useWaveform(id: string | undefined) {
   return useQuery<number[], Error>({
     queryKey: ["tracks", id, "waveform"],
-    queryFn: () => fetchWaveform(id!),
+    queryFn: () => fetchWaveform(id ?? ""),
     enabled: Boolean(id),
     // Waveforms never change for a given track, so keep them cached across the
     // session rather than refetching on every remount.

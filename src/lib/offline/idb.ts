@@ -91,7 +91,5 @@ export function listDownloads(): Promise<DownloadRecord[]> {
 }
 
 export function listDownloadedIds(): Promise<string[]> {
-  return tx<IDBValidKey[]>("readonly", (s) => s.getAllKeys()).then((keys) =>
-    keys.map(String),
-  );
+  return tx<IDBValidKey[]>("readonly", (s) => s.getAllKeys()).then((keys) => keys.map(String));
 }

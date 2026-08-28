@@ -1,8 +1,8 @@
 "use client";
 
-import { apiClient } from "@/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InferRequestType, InferResponseType } from "hono/client";
+import { apiClient } from "@/lib/api-client";
 
 const updateTrackEndpoint = apiClient.api.tracks[":id"].$patch;
 
@@ -13,7 +13,11 @@ async function updateTrack(id: string, form: UpdateTrackInput): Promise<UpdateTr
   const res = await updateTrackEndpoint({ param: { id }, form });
   const data: unknown = await res.json();
   if (!res.ok) {
-    const hasErrorMessage = data && typeof data === "object" && "error" in data && typeof (data as Record<string, unknown>).error === "string";
+    const hasErrorMessage =
+      data &&
+      typeof data === "object" &&
+      "error" in data &&
+      typeof (data as Record<string, unknown>).error === "string";
     throw new Error(hasErrorMessage ? (data as { error: string }).error : "Failed to update track");
   }
   return data as UpdateTrackResponse;

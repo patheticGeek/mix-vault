@@ -1,8 +1,8 @@
 "use client";
 
-import { apiClient } from "@/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
 import type { InferResponseType } from "hono/client";
+import { apiClient } from "@/lib/api-client";
 
 const meEndpoint = apiClient.api.auth.me.$get;
 

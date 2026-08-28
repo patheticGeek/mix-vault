@@ -1,7 +1,8 @@
 "use client";
 
-import type { WinampSkinProps } from "@/components/magic/types";
 import { useRef } from "react";
+import type { WinampSkinProps } from "@/components/magic/types";
+import { handleSeekKeyDown } from "@/lib/seekKeyboard";
 
 // A retro CRT terminal skin: green phosphor on black, monospace everything,
 // blinking cursor, ASCII progress bar and VU meter — like driving cmus/ncmpcpp
@@ -39,7 +40,7 @@ export function TerminalSkin({
   // VU meter: down-sample peaks to fixed columns, map amplitude -> block glyph.
   const COLS = 20;
   const vu = Array.from({ length: COLS }, (_, i) => {
-    const v = peaks.length === 0 ? 0.08 : peaks[Math.floor((i / COLS) * peaks.length)] ?? 0;
+    const v = peaks.length === 0 ? 0.08 : (peaks[Math.floor((i / COLS) * peaks.length)] ?? 0);
     return GLYPHS[Math.min(GLYPHS.length - 1, Math.floor(v * GLYPHS.length))];
   }).join("");
 
@@ -89,12 +90,13 @@ export function TerminalSkin({
             className="shrink-0 overflow-hidden"
             style={{ width: 48, height: 48, border: `1px solid ${green}`, background: "#000" }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={track.artworkSrc}
               alt=""
               className="w-full h-full object-cover"
-              style={{ filter: "grayscale(1) sepia(1) hue-rotate(70deg) saturate(3) contrast(1.1)" }}
+              style={{
+                filter: "grayscale(1) sepia(1) hue-rotate(70deg) saturate(3) contrast(1.1)",
+              }}
             />
           </div>
           <div className="min-w-0 flex-1">
@@ -126,6 +128,8 @@ export function TerminalSkin({
           <span
             ref={seekRef}
             onClick={handleSeek}
+            onKeyDown={(e) => handleSeekKeyDown(e, progress, onSeek)}
+            tabIndex={0}
             className="inline-block cursor-pointer align-baseline"
             role="slider"
             aria-label="Seek"

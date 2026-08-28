@@ -1,6 +1,6 @@
+import type { Metadata } from "next";
 import { PlayerPageClient } from "@/app/player/PlayerPageClient";
 import { APP_TITLE } from "@/config";
-import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: `Player · ${APP_TITLE}`,

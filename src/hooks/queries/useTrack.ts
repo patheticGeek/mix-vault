@@ -1,8 +1,8 @@
 "use client";
 
-import { apiClient } from "@/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
 import type { InferResponseType } from "hono/client";
+import { apiClient } from "@/lib/api-client";
 
 const trackEndpoint = apiClient.api.tracks[":id"].$get;
 

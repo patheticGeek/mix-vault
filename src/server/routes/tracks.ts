@@ -1,15 +1,15 @@
-import { getOptionalSession, requireAuth } from "@/lib/auth/session";
-import { sha256Hex } from "@/lib/contentHash";
-import { getDb, tracks } from "@/lib/db";
-import { normalizeTrackRow, normalizeTrackSummary, trackStatusSchema } from "@/lib/db/schema";
-import { ensureUniqueSlug } from "@/lib/slug";
-import { parseTrackLinks } from "@/lib/trackLinks";
-import { DEFAULT_ARTWORK_KEY, trackAssetKey } from "@/lib/trackAssetKey";
 import { zValidator } from "@hono/zod-validator";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
+import { getOptionalSession, requireAuth } from "@/lib/auth/session";
+import { sha256Hex } from "@/lib/contentHash";
+import { getDb, tracks } from "@/lib/db";
+import { normalizeTrackRow, normalizeTrackSummary, trackStatusSchema } from "@/lib/db/schema";
+import { ensureUniqueSlug } from "@/lib/slug";
+import { DEFAULT_ARTWORK_KEY, trackAssetKey } from "@/lib/trackAssetKey";
+import { parseTrackLinks } from "@/lib/trackLinks";
 
 function extensionOf(filename: string): string {
   const dot = filename.lastIndexOf(".");
@@ -20,7 +20,10 @@ function extensionOf(filename: string): string {
 // tracks are openable by anyone with the link; private tracks require a valid
 // session. Callers treat `false` as a 404 so a private track's existence isn't
 // revealed to anonymous visitors.
-async function canView(c: Parameters<typeof getOptionalSession>[0], status: string): Promise<boolean> {
+async function canView(
+  c: Parameters<typeof getOptionalSession>[0],
+  status: string,
+): Promise<boolean> {
   if (status !== "private") return true;
   return Boolean(await getOptionalSession(c));
 }
@@ -39,7 +42,9 @@ const createTrackSchema = z
       .instanceof(File, { message: "Invalid artwork file" })
       .refine((file) => file.size > 0, "Artwork file must not be empty")
       .optional(),
-    waveformPreview: z.string({ error: "Waveform preview is required" }).min(1, "Waveform preview is required"),
+    waveformPreview: z
+      .string({ error: "Waveform preview is required" })
+      .min(1, "Waveform preview is required"),
     duration: z
       .string({ error: "Duration is required" })
       .transform((value) => Number(value))
@@ -261,7 +266,10 @@ export const tracksRouter = new Hono()
         await context.env.MIX_VAULT_R2.put(newArtworkFileKey, artworkBuffer, {
           httpMetadata: { contentType: artworkFile.type || undefined },
         });
-        if (newArtworkFileKey !== existing.artworkFile && existing.artworkFile !== DEFAULT_ARTWORK_KEY) {
+        if (
+          newArtworkFileKey !== existing.artworkFile &&
+          existing.artworkFile !== DEFAULT_ARTWORK_KEY
+        ) {
           await context.env.MIX_VAULT_R2.delete(existing.artworkFile);
         }
         artworkFileKey = newArtworkFileKey;

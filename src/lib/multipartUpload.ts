@@ -42,7 +42,12 @@ function isRetryableStatus(status: number): boolean {
 async function parseErrorMessage(res: Response, fallback: string): Promise<string> {
   try {
     const data: unknown = await res.json();
-    if (data && typeof data === "object" && "error" in data && typeof (data as Record<string, unknown>).error === "string") {
+    if (
+      data &&
+      typeof data === "object" &&
+      "error" in data &&
+      typeof (data as Record<string, unknown>).error === "string"
+    ) {
       return (data as { error: string }).error;
     }
   } catch {
@@ -53,7 +58,12 @@ async function parseErrorMessage(res: Response, fallback: string): Promise<strin
 
 // Uploads directly to R2's S3-compatible endpoint via a presigned URL, so the
 // file bytes never pass through (and burn CPU time in) our Worker.
-function putPart(url: string, partNumber: number, chunk: Blob, onProgress: (loaded: number) => void): Promise<UploadedPart> {
+function putPart(
+  url: string,
+  partNumber: number,
+  chunk: Blob,
+  onProgress: (loaded: number) => void,
+): Promise<UploadedPart> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url);
@@ -72,7 +82,9 @@ function putPart(url: string, partNumber: number, chunk: Blob, onProgress: (load
         resolve({ partNumber, etag });
         return;
       }
-      reject(new PartUploadError(`Failed to upload audio file part (status ${xhr.status})`, xhr.status));
+      reject(
+        new PartUploadError(`Failed to upload audio file part (status ${xhr.status})`, xhr.status),
+      );
     };
 
     xhr.onerror = () => reject(new PartUploadError("Failed to upload audio file part", 0));
@@ -122,7 +134,11 @@ export async function uploadAudioMultipart(
   if (!createRes.ok) {
     throw new Error(await parseErrorMessage(createRes, "Failed to start audio upload"));
   }
-  const { key, uploadId, parts: presignedParts } = (await createRes.json()) as {
+  const {
+    key,
+    uploadId,
+    parts: presignedParts,
+  } = (await createRes.json()) as {
     key: string;
     uploadId: string;
     parts: PresignedPart[];

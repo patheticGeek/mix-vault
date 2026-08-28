@@ -1,5 +1,9 @@
 "use client";
 
+import { Loader2, Pause, Play } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { EnqueueMenu } from "@/components/EnqueueMenu";
 import { DownloadButton } from "@/components/offline/DownloadButton";
@@ -9,10 +13,6 @@ import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
 import { useWaveform } from "@/hooks/queries/useWaveform";
 import { formatDuration } from "@/lib/time";
 import { TRACK_LINK_KEYS, type TrackLinks } from "@/lib/trackLinks";
-import { Loader2, Pause, Play } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 
 // Tracks whether the page's #hash currently points at this slug, so a
 // shared link (see CopyLinkButton) can highlight the track it targets.
@@ -82,7 +82,14 @@ export function TrackListItem({
   links,
   isLastPlayed = false,
 }: TrackListItemProps) {
-  const { currentTrack, isPlaying: playerIsPlaying, currentTime: playerCurrentTime, isBuffering: playerIsBuffering, toggle, seek } = usePlayer();
+  const {
+    currentTrack,
+    isPlaying: playerIsPlaying,
+    currentTime: playerCurrentTime,
+    isBuffering: playerIsBuffering,
+    toggle,
+    seek,
+  } = usePlayer();
   const isCurrent = id !== undefined && currentTrack?.id === id;
   const isPlaying = isCurrent && playerIsPlaying;
   const currentTime = isCurrent ? playerCurrentTime : 0;
@@ -111,8 +118,12 @@ export function TrackListItem({
   }
 
   const artwork = (
-    <div onClick={stop} className="relative aspect-square w-24 shrink-0 self-start rounded overflow-hidden bg-base-300">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
+    // biome-ignore lint/a11y/noStaticElementInteractions: only stops the card's click from bubbling; the play button inside is the actual interactive control
+    // biome-ignore lint/a11y/useKeyWithClickEvents: same — no keyboard interaction happens on this div itself
+    <div
+      onClick={stop}
+      className="relative aspect-square w-24 shrink-0 self-start rounded overflow-hidden bg-base-300"
+    >
       <img src={artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
       <button
         type="button"
@@ -136,6 +147,8 @@ export function TrackListItem({
   );
 
   const linksButtons = (
+    // biome-ignore lint/a11y/noStaticElementInteractions: only stops the card's click from bubbling; the buttons/links inside are the actual interactive controls
+    // biome-ignore lint/a11y/useKeyWithClickEvents: same — no keyboard interaction happens on this div itself
     <div onClick={stop} className="flex items-center">
       {links && TRACK_LINK_KEYS.some((key) => links[key]) && (
         <div className="flex items-center">
@@ -201,8 +214,14 @@ export function TrackListItem({
   const waveform = (
     // Only swallow the card click while the waveform is actually seekable
     // (this is the current track); otherwise a click should open the track.
+    // biome-ignore lint/a11y/noStaticElementInteractions: only stops the card's click from bubbling; the Waveform inside has its own keyboard-accessible slider
+    // biome-ignore lint/a11y/useKeyWithClickEvents: same — no keyboard interaction happens on this div itself
     <div className="relative" onClick={isCurrent ? stop : undefined}>
-      <Waveform peaks={peaks} progress={duration ? currentTime / duration : 0} onSeek={isCurrent ? seek : undefined} />
+      <Waveform
+        peaks={peaks}
+        progress={duration ? currentTime / duration : 0}
+        onSeek={isCurrent ? seek : undefined}
+      />
       <span className="absolute bottom-0.5 left-1 text-[10px] tabular-nums text-base-content/70 bg-black/60 px-1 rounded">
         {formatDuration(currentTime)}
       </span>
@@ -235,6 +254,7 @@ export function TrackListItem({
   }
 
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: mouse-only shortcut to open the track; titleEl already renders a real, keyboard-accessible <Link> to the same destination
     <li
       id={slug}
       onClick={openTrack}

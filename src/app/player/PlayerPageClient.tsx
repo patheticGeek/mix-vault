@@ -1,17 +1,17 @@
 "use client";
 
-import { usePlayer } from "@/components/PlayerProvider";
+import { ArrowLeft, ListMusic } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { QueuePanel, type QueuePanelItem } from "@/components/magic/QueuePanel";
 import { SkinSelector } from "@/components/magic/SkinSelector";
+import { DEFAULT_SKIN_ID, getSkin, SKINS } from "@/components/magic/skins";
 import { TrackPickerPanel } from "@/components/magic/TrackPickerPanel";
-import { DEFAULT_SKIN_ID, SKINS, getSkin } from "@/components/magic/skins";
+import { usePlayer } from "@/components/PlayerProvider";
 import { useListTracks } from "@/hooks/queries/useListTracks";
 import { useWaveform } from "@/hooks/queries/useWaveform";
 import { assetUrl } from "@/lib/cdn";
 import { formatDuration } from "@/lib/time";
-import { ArrowLeft, ListMusic } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
 
 const SKIN_STORAGE_KEY = "mix-vault:magic-skin";
 
@@ -70,10 +70,7 @@ export function PlayerPageClient() {
   const [skinId, setSkinId] = useState(DEFAULT_SKIN_ID);
 
   useEffect(() => {
-    const stored =
-      typeof window !== "undefined"
-        ? localStorage.getItem(SKIN_STORAGE_KEY)
-        : null;
+    const stored = typeof window !== "undefined" ? localStorage.getItem(SKIN_STORAGE_KEY) : null;
     if (stored && SKINS.some((s) => s.id === stored)) setSkinId(stored);
   }, []);
 
@@ -109,9 +106,7 @@ export function PlayerPageClient() {
   const SkinComponent = skin.Component;
   const theme = skin.theme;
 
-  const progress = currentTrack?.duration
-    ? Math.min(1, currentTime / currentTrack.duration)
-    : 0;
+  const progress = currentTrack?.duration ? Math.min(1, currentTime / currentTrack.duration) : 0;
 
   return (
     <div className="fixed inset-0 flex flex-col items-center bg-black overflow-y-auto p-4 pb-24">
@@ -194,12 +189,7 @@ export function PlayerPageClient() {
           Always shown, including the empty state, so the listener can dress
           the player before anything's playing. */}
       <div className="fixed bottom-4 left-1/2 z-20 -translate-x-1/2">
-        <SkinSelector
-          skins={SKINS}
-          activeId={skinId}
-          theme={theme}
-          onSelect={selectSkin}
-        />
+        <SkinSelector skins={SKINS} activeId={skinId} theme={theme} onSelect={selectSkin} />
       </div>
 
       {/* Subtle escape hatch — back to whatever page the user came from. */}

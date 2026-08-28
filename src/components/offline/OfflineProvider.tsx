@@ -1,13 +1,6 @@
 "use client";
 
 import {
-  downloadTrack,
-  isOfflineSupported,
-  listDownloadStates,
-  removeDownload,
-  type DownloadableTrack,
-} from "@/lib/offline/downloads";
-import {
   createContext,
   useCallback,
   useContext,
@@ -16,6 +9,13 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  type DownloadableTrack,
+  downloadTrack,
+  isOfflineSupported,
+  listDownloadStates,
+  removeDownload,
+} from "@/lib/offline/downloads";
 
 export type DownloadStatus = "downloading" | "done" | "error" | "partial";
 

@@ -1,5 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { SignJWT, jwtVerify } from "jose";
+import { jwtVerify, SignJWT } from "jose";
 
 const JWT_ALG = "HS256";
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
@@ -11,16 +11,12 @@ export interface SessionPayload {
 async function getJwtSecretKey() {
   const { env } = getCloudflareContext();
   if (!env.JWT_SECRET) {
-    throw new Error(
-      "JWT_SECRET is not configured. Run `pnpm generate:auth-secrets`.",
-    );
+    throw new Error("JWT_SECRET is not configured. Run `pnpm generate:auth-secrets`.");
   }
   return new TextEncoder().encode(env.JWT_SECRET);
 }
 
-export async function signSessionToken(
-  payload: SessionPayload,
-): Promise<string> {
+export async function signSessionToken(payload: SessionPayload): Promise<string> {
   const secret = await getJwtSecretKey();
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: JWT_ALG })
@@ -29,9 +25,7 @@ export async function signSessionToken(
     .sign(secret);
 }
 
-export async function verifySessionToken(
-  token: string,
-): Promise<SessionPayload | null> {
+export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
   try {
     const secret = await getJwtSecretKey();
     const { payload } = await jwtVerify(token, secret, {

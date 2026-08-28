@@ -43,7 +43,7 @@ async function handleNavigation(request) {
   const cache = await caches.open(CACHE_NAME);
   try {
     const response = await fetch(request);
-    if (response && response.ok) cache.put(request, response.clone());
+    if (response?.ok) cache.put(request, response.clone());
     return response;
   } catch {
     const cached = (await cache.match(request)) || (await cache.match("/"));
@@ -59,7 +59,7 @@ async function handleAsset(request) {
   const cached = await cache.match(request);
   const network = fetch(request)
     .then((response) => {
-      if (response && response.ok) cache.put(request, response.clone());
+      if (response?.ok) cache.put(request, response.clone());
       return response;
     })
     .catch(() => null);

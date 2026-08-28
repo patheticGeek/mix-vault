@@ -6,11 +6,7 @@ const PRESIGN_EXPIRES_SECONDS = 60 * 60; // 1 hour, generous enough for a slow u
 
 function getClient() {
   const { env } = getCloudflareContext();
-  if (
-    !env.R2_ACCOUNT_ID ||
-    !env.R2_ACCESS_KEY_ID ||
-    !env.R2_SECRET_ACCESS_KEY
-  ) {
+  if (!env.R2_ACCOUNT_ID || !env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY) {
     throw new Error(
       "R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY are not configured. Run `pnpm generate:auth-secrets` docs or see .dev.vars.example.",
     );
@@ -90,8 +86,7 @@ export async function completeMultipartUpload(
 
   const body = `<CompleteMultipartUpload>${parts
     .map(
-      (part) =>
-        `<Part><PartNumber>${part.partNumber}</PartNumber><ETag>${part.etag}</ETag></Part>`,
+      (part) => `<Part><PartNumber>${part.partNumber}</PartNumber><ETag>${part.etag}</ETag></Part>`,
     )
     .join("")}</CompleteMultipartUpload>`;
 
@@ -103,10 +98,7 @@ export async function completeMultipartUpload(
   await assertOk(res, "completeMultipartUpload");
 }
 
-export async function abortMultipartUpload(
-  key: string,
-  uploadId: string,
-): Promise<void> {
+export async function abortMultipartUpload(key: string, uploadId: string): Promise<void> {
   const { aws, endpoint } = getClient();
   const url = new URL(objectUrl(endpoint, key));
   url.searchParams.set("uploadId", uploadId);

@@ -14,26 +14,26 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
     "binding": "ASSETS",
-    "directory": ".open-next/assets",
+    "directory": ".open-next/assets"
   },
   "images": {
     // Enable image optimization
     // see https://opennext.js.org/cloudflare/howtos/image
-    "binding": "IMAGES",
+    "binding": "IMAGES"
   },
   "services": [
     {
       // Self-reference service binding, the service name must match the worker name
       // see https://opennext.js.org/cloudflare/caching
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "mix-vault",
-    },
+      "service": "mix-vault"
+    }
   ],
   "observability": {
     "enabled": true,
     "traces": {
-      "enabled": true,
-    },
+      "enabled": true
+    }
   },
   "upload_source_maps": true,
   /**
@@ -52,17 +52,23 @@
       "binding": "MIX_VAULT_DB",
       "database_name": "mix-vault",
       "database_id": "ac903244-f5bf-4f7c-a6b5-4b3fb85bc2da",
-      "migrations_dir": "drizzle/migrations",
-    },
+      "migrations_dir": "drizzle/migrations"
+    }
   ],
   "r2_buckets": [
     {
       "binding": "MIX_VAULT_R2", // <~ valid JavaScript variable name
-      "bucket_name": "mix-vault",
-    },
+      "bucket_name": "mix-vault"
+    }
   ],
   "secrets": {
-    "required": ["AUTH_USERNAME", "AUTH_PASSWORD_HASH", "JWT_SECRET", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"],
+    "required": [
+      "AUTH_USERNAME",
+      "AUTH_PASSWORD_HASH",
+      "JWT_SECRET",
+      "R2_ACCESS_KEY_ID",
+      "R2_SECRET_ACCESS_KEY"
+    ]
   },
   /**
    * Environment Variables
@@ -72,6 +78,6 @@
    */
   "vars": {
     // Not sensitive: it's the same account ID visible in every R2 presigned URL and the dashboard.
-    "R2_ACCOUNT_ID": "107a35960b0e1889cf2931a8b8c21352",
-  },
+    "R2_ACCOUNT_ID": "107a35960b0e1889cf2931a8b8c21352"
+  }
 }

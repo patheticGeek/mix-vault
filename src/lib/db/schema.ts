@@ -1,7 +1,7 @@
-import { parseTrackLinks } from "@/lib/trackLinks";
 import { sql } from "drizzle-orm";
 import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
+import { parseTrackLinks } from "@/lib/trackLinks";
 
 // A track's visibility:
 //   public   — listed on the homepage and openable by anyone

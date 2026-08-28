@@ -1,18 +1,18 @@
 "use client";
 
+import { ArrowLeft, Loader2, Pause, Play } from "lucide-react";
+import Link from "next/link";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { EnqueueMenu } from "@/components/EnqueueMenu";
 import { DownloadButton } from "@/components/offline/DownloadButton";
 import { usePlayer } from "@/components/PlayerProvider";
 import { Waveform } from "@/components/Waveform";
 import { TRACK_LINK_ICONS, TRACK_LINK_LABELS } from "@/config";
-import { useTrackBySlug, type TrackBySlugResponse } from "@/hooks/queries/useTrackBySlug";
+import { type TrackBySlugResponse, useTrackBySlug } from "@/hooks/queries/useTrackBySlug";
 import { useWaveform } from "@/hooks/queries/useWaveform";
 import { assetUrl } from "@/lib/cdn";
 import { formatDuration, timeAgo } from "@/lib/time";
 import { TRACK_LINK_KEYS } from "@/lib/trackLinks";
-import { ArrowLeft, Loader2, Pause, Play } from "lucide-react";
-import Link from "next/link";
 
 interface TrackPageClientProps {
   slug: string;
@@ -21,7 +21,14 @@ interface TrackPageClientProps {
 
 export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
   const { data: track, isLoading, error } = useTrackBySlug(slug, initialTrack);
-  const { currentTrack, isPlaying: playerIsPlaying, currentTime: playerCurrentTime, isBuffering: playerIsBuffering, toggle, seek } = usePlayer();
+  const {
+    currentTrack,
+    isPlaying: playerIsPlaying,
+    currentTime: playerCurrentTime,
+    isBuffering: playerIsBuffering,
+    toggle,
+    seek,
+  } = usePlayer();
 
   const isCurrent = Boolean(track) && currentTrack?.id === track?.id;
   const isPlaying = isCurrent && playerIsPlaying;
@@ -50,8 +57,11 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
 
   const artwork = track && (
     <div className="relative w-48 h-48 sm:w-56 sm:h-56 shrink-0 rounded-box overflow-hidden bg-base-300 shadow-lg">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={assetUrl(track.artworkFile)} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      <img
+        src={assetUrl(track.artworkFile)}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+      />
       <button
         type="button"
         onClick={togglePlay}
@@ -156,7 +166,9 @@ export function TrackPageClient({ slug, initialTrack }: TrackPageClientProps) {
         {track === null && (
           <div className="text-center py-10">
             <p className="text-lg font-semibold">Track not found</p>
-            <p className="text-base-content/60 mt-1">It may have been removed or the link is wrong.</p>
+            <p className="text-base-content/60 mt-1">
+              It may have been removed or the link is wrong.
+            </p>
             <Link href="/" className="btn btn-primary btn-sm mt-6">
               Back to all tracks
             </Link>

@@ -1,8 +1,8 @@
 "use client";
 
-import { TrackForm } from "@/components/TrackForm";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { TrackForm } from "@/components/TrackForm";
 
 export default function NewTrackPage() {
   return (

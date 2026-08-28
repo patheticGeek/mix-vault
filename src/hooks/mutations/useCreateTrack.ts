@@ -1,9 +1,9 @@
 "use client";
 
-import { apiClient } from "@/lib/api-client";
-import { uploadAudioMultipart } from "@/lib/multipartUpload";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InferRequestType, InferResponseType } from "hono/client";
+import { apiClient } from "@/lib/api-client";
+import { uploadAudioMultipart } from "@/lib/multipartUpload";
 
 const createTrackEndpoint = apiClient.api.tracks.$post;
 
@@ -76,11 +76,7 @@ async function createTrack({
         "error" in data &&
         typeof (data as Record<string, unknown>).error === "string";
       reject(
-        new Error(
-          hasErrorMessage
-            ? (data as { error: string }).error
-            : "Failed to create track",
-        ),
+        new Error(hasErrorMessage ? (data as { error: string }).error : "Failed to create track"),
       );
     };
 

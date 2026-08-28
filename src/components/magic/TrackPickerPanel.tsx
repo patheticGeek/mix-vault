@@ -1,8 +1,8 @@
 "use client";
 
-import type { SkinTheme } from "@/components/magic/types";
 import { ListMusic, Play } from "lucide-react";
 import { useState } from "react";
+import type { SkinTheme } from "@/components/magic/types";
 
 export interface TrackPickerItem {
   id: string;
@@ -63,12 +63,21 @@ export function TrackPickerPanel({ items, theme, formatTime, onPlay }: TrackPick
                 className="flex w-full items-center gap-2.5 px-2 py-2 text-left transition-colors"
                 style={{ background: isHovered ? HOVER_BG : "transparent", color: theme.text }}
               >
-                <span className="w-4 shrink-0 text-center text-xs tabular-nums" style={{ opacity: 0.7 }}>
+                <span
+                  className="w-4 shrink-0 text-center text-xs tabular-nums"
+                  style={{ opacity: 0.7 }}
+                >
                   {isHovered ? <Play className="mx-auto h-3 w-3" fill="currentColor" /> : i + 1}
                 </span>
-                <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded" style={{ background: "rgba(128,128,128,0.2)" }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={t.artworkSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <span
+                  className="relative h-8 w-8 shrink-0 overflow-hidden rounded"
+                  style={{ background: "rgba(128,128,128,0.2)" }}
+                >
+                  <img
+                    src={t.artworkSrc}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
                 </span>
                 <span className="min-w-0 flex-1 truncate text-sm">{t.title}</span>
                 <span className="shrink-0 text-xs tabular-nums" style={{ opacity: 0.6 }}>

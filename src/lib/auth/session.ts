@@ -1,7 +1,7 @@
-import { verifySessionToken, type SessionPayload } from "@/lib/auth/jwt";
 import type { Context } from "hono";
 import { getCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
+import { type SessionPayload, verifySessionToken } from "@/lib/auth/jwt";
 
 export const SESSION_COOKIE_NAME = "session";
 
