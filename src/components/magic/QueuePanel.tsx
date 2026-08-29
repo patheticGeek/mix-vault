@@ -94,7 +94,7 @@ export function QueuePanel({
 
   return (
     <div
-      className="w-[min(92vw,440px)] overflow-hidden"
+      className="w-full overflow-hidden"
       style={{
         fontFamily: theme.fontFamily,
         background: theme.surface,

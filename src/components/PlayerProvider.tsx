@@ -69,12 +69,6 @@ interface PlayerContextValue {
   // is left for the mini player to pick up — for ephemeral playback (like a
   // track form's live preview) that shouldn't survive its page.
   discard: (id: string) => void;
-  // Whether the full-screen player drawer (skin + queue + track picker) is
-  // open. Lives here rather than in local component state so any page (e.g.
-  // the navbar's "Player" button) can open it without prop drilling.
-  isPlayerExpanded: boolean;
-  openPlayer: () => void;
-  closePlayer: () => void;
 }
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -137,7 +131,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [isBuffering, setIsBuffering] = useState(false);
   const [volume, setVolumeState] = useState(1);
   const [queue, setQueueState] = useState<PlayerTrack[]>([]);
-  const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
   // When the current track has been downloaded, this holds a blob URL for its
   // OPFS audio (tagged with the track id it belongs to). The <audio> src falls
   // back to the network URL whenever this doesn't match the current track.
@@ -393,9 +386,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
-
-  const openPlayer = useCallback(() => setIsPlayerExpanded(true), []);
-  const closePlayer = useCallback(() => setIsPlayerExpanded(false), []);
 
   const seek = useCallback((fraction: number) => {
     const audio = audioRef.current;
@@ -713,9 +703,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       next,
       prev,
       discard,
-      isPlayerExpanded,
-      openPlayer,
-      closePlayer,
     }),
     [
       currentTrack,
@@ -742,9 +729,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       next,
       prev,
       discard,
-      isPlayerExpanded,
-      openPlayer,
-      closePlayer,
     ],
   );
 

@@ -1,14 +1,12 @@
 "use client";
 
-import { AudioLines, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import Link from "next/link";
 import { AuthStatus } from "@/components/AuthStatus";
-import { usePlayer } from "@/components/PlayerProvider";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { APP_TITLE } from "@/config";
 
 export function Navbar() {
-  const { openPlayer } = usePlayer();
-
   return (
     <header className="navbar sticky top-0 z-50 bg-base-100/70 backdrop-blur-md border-b border-base-content/10">
       <div className="navbar-start">
@@ -25,16 +23,7 @@ export function Navbar() {
         >
           <Download className="w-5 h-5" />
         </Link>
-        <button
-          type="button"
-          onClick={openPlayer}
-          aria-label="Open player"
-          title="Player"
-          className="btn btn-ghost gap-1 normal-case"
-        >
-          <AudioLines className="w-5 h-5" />
-          Player
-        </button>
+        <ThemeSwitcher />
         <AuthStatus />
       </div>
     </header>
