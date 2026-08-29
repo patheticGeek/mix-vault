@@ -1,8 +1,8 @@
 "use client";
 
-import type { MagicSkin } from "@/components/magic/types";
-import { DEFAULT_SKIN_ID, getSkin, SKINS } from "@/components/magic/skins";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { DEFAULT_SKIN_ID, getSkin, SKINS } from "@/components/magic/skins";
+import type { MagicSkin } from "@/components/magic/types";
 
 const SKIN_STORAGE_KEY = "mix-vault:magic-skin";
 

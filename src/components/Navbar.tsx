@@ -1,10 +1,10 @@
 "use client";
 
+import { AudioLines, Download } from "lucide-react";
+import Link from "next/link";
 import { AuthStatus } from "@/components/AuthStatus";
 import { usePlayer } from "@/components/PlayerProvider";
 import { APP_TITLE } from "@/config";
-import { AudioLines, Download } from "lucide-react";
-import Link from "next/link";
 
 export function Navbar() {
   const { openPlayer } = usePlayer();

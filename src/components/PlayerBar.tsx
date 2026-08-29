@@ -1,16 +1,16 @@
 "use client";
 
-import { usePlayer } from "@/components/PlayerProvider";
-import { useTheme } from "@/components/ThemeProvider";
+import { ChevronDown, ChevronUp, ListMusic, Loader2, Pause, Play, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { QueuePanel, type QueuePanelItem } from "@/components/magic/QueuePanel";
 import { SkinSelector } from "@/components/magic/SkinSelector";
 import { TrackPickerPanel } from "@/components/magic/TrackPickerPanel";
+import { usePlayer } from "@/components/PlayerProvider";
+import { useTheme } from "@/components/ThemeProvider";
 import { useListTracks } from "@/hooks/queries/useListTracks";
 import { useWaveform } from "@/hooks/queries/useWaveform";
 import { assetUrl } from "@/lib/cdn";
 import { formatDuration } from "@/lib/time";
-import { ChevronDown, ChevronUp, Loader2, ListMusic, Pause, Play, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
 
 // How long the fly in/out transition takes, kept in sync with the
 // `duration-300` transition class below so the exit unmount timer matches
@@ -91,7 +91,13 @@ export function PlayerBar() {
   const { data: peaks = [] } = useWaveform(isPlayerExpanded ? currentTrack?.id : undefined);
 
   const queueItems = useMemo<QueuePanelItem[]>(
-    () => queue.map((t) => ({ id: t.id, title: t.title, artworkSrc: t.artworkSrc, duration: t.duration })),
+    () =>
+      queue.map((t) => ({
+        id: t.id,
+        title: t.title,
+        artworkSrc: t.artworkSrc,
+        duration: t.duration,
+      })),
     [queue],
   );
 
@@ -109,117 +115,137 @@ export function PlayerBar() {
       {mounted && currentTrack && (
         <div
           className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md transition-all duration-300 ease-out ${
-            isPlayerExpanded ? "translate-y-24 opacity-0 pointer-events-none" : entered ? "translate-y-0 opacity-100" : "translate-y-24 opacity-0"
+            isPlayerExpanded
+              ? "translate-y-24 opacity-0 pointer-events-none"
+              : entered
+                ? "translate-y-0 opacity-100"
+                : "translate-y-24 opacity-0"
           }`}
         >
-        {/* biome-ignore lint/a11y/useSemanticElements: contains a nested play/pause <button>, so the outer control can't itself be a <button> */}
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={openPlayer}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              openPlayer();
-            }
-          }}
-          aria-label="Open player"
-          className="rounded-box bg-base-300 shadow-lg overflow-hidden cursor-pointer"
-        >
-          <div className="relative flex items-center gap-3 p-2 pr-2">
-            <div className="relative w-10 h-10 shrink-0 rounded overflow-hidden bg-base-300">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={currentTrack.artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
-            </div>
+          {/* biome-ignore lint/a11y/useSemanticElements: contains a nested play/pause <button>, so the outer control can't itself be a <button> */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={openPlayer}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                openPlayer();
+              }
+            }}
+            aria-label="Open player"
+            className="rounded-box bg-base-300 shadow-lg overflow-hidden cursor-pointer"
+          >
+            <div className="relative flex items-center gap-3 p-2 pr-2">
+              <div className="relative w-10 h-10 shrink-0 rounded overflow-hidden bg-base-300">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={currentTrack.artworkSrc}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              </div>
 
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggle(currentTrack);
-              }}
-              aria-label={isPlaying ? "Pause" : "Play"}
-              className="btn btn-ghost btn-circle btn-sm shrink-0"
-            >
-              {isPlaying ? (
-                isBuffering ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Pause className="w-4 h-4" fill="currentColor" />
-                )
-              ) : (
-                <Play className="w-4 h-4 translate-x-0.5" fill="currentColor" />
-              )}
-            </button>
-
-            <span className="min-w-0 flex-1 truncate text-sm font-medium">{currentTrack.title}</span>
-
-            <span className="text-xs tabular-nums text-base-content/60 shrink-0">
-              {formatDuration(currentTime)} / {formatDuration(currentTrack.duration)}
-            </span>
-
-            {queue.length > 0 && (
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setQueueOpen((v) => !v);
+                  toggle(currentTrack);
                 }}
-                aria-label={queueOpen ? "Hide queue" : "Show queue"}
-                aria-expanded={queueOpen}
+                aria-label={isPlaying ? "Pause" : "Play"}
                 className="btn btn-ghost btn-circle btn-sm shrink-0"
               >
-                {queueOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                {isPlaying ? (
+                  isBuffering ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Pause className="w-4 h-4" fill="currentColor" />
+                  )
+                ) : (
+                  <Play className="w-4 h-4 translate-x-0.5" fill="currentColor" />
+                )}
               </button>
-            )}
 
-            <div className="absolute inset-x-0 bottom-0 h-0.5 bg-base-content/10 overflow-hidden">
-              <div className="h-full bg-primary" style={{ width: `${progress * 100}%` }} />
+              <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                {currentTrack.title}
+              </span>
+
+              <span className="text-xs tabular-nums text-base-content/60 shrink-0">
+                {formatDuration(currentTime)} / {formatDuration(currentTrack.duration)}
+              </span>
+
+              {queue.length > 0 && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setQueueOpen((v) => !v);
+                  }}
+                  aria-label={queueOpen ? "Hide queue" : "Show queue"}
+                  aria-expanded={queueOpen}
+                  className="btn btn-ghost btn-circle btn-sm shrink-0"
+                >
+                  {queueOpen ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronUp className="w-4 h-4" />
+                  )}
+                </button>
+              )}
+
+              <div className="absolute inset-x-0 bottom-0 h-0.5 bg-base-content/10 overflow-hidden">
+                <div className="h-full bg-primary" style={{ width: `${progress * 100}%` }} />
+              </div>
             </div>
-          </div>
 
-          {queueOpen && queue.length > 0 && (
-            <ul className="max-h-64 overflow-y-auto border-t border-base-content/10">
-              {queue.map((t, i) => {
-                const isCurrent = i === queueIndex;
-                return (
-                  <li key={t.id}>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        playAt(i);
-                      }}
-                      className={`flex w-full items-center gap-2.5 px-2 py-1.5 text-left transition-colors ${
-                        isCurrent ? "bg-base-content/10" : "hover:bg-base-content/5"
-                      }`}
-                    >
-                      <span className="w-4 shrink-0 text-center text-xs tabular-nums text-base-content/50">
-                        {isCurrent && isPlaying ? (
-                          <Pause className="mx-auto w-3 h-3" fill="currentColor" />
-                        ) : isCurrent ? (
-                          <Play className="mx-auto w-3 h-3" fill="currentColor" />
-                        ) : (
-                          i + 1
-                        )}
-                      </span>
-                      <span className="relative w-7 h-7 shrink-0 rounded overflow-hidden bg-base-200">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={t.artworkSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                      </span>
-                      <span className={`min-w-0 flex-1 truncate text-sm ${isCurrent ? "font-semibold" : ""}`}>
-                        {t.title}
-                      </span>
-                      <span className="shrink-0 text-xs tabular-nums text-base-content/40">
-                        {formatDuration(t.duration)}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
+            {queueOpen && queue.length > 0 && (
+              <ul className="max-h-64 overflow-y-auto border-t border-base-content/10">
+                {queue.map((t, i) => {
+                  const isCurrent = i === queueIndex;
+                  return (
+                    <li key={t.id}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          playAt(i);
+                        }}
+                        className={`flex w-full items-center gap-2.5 px-2 py-1.5 text-left transition-colors ${
+                          isCurrent ? "bg-base-content/10" : "hover:bg-base-content/5"
+                        }`}
+                      >
+                        <span className="w-4 shrink-0 text-center text-xs tabular-nums text-base-content/50">
+                          {isCurrent && isPlaying ? (
+                            <Pause className="mx-auto w-3 h-3" fill="currentColor" />
+                          ) : isCurrent ? (
+                            <Play className="mx-auto w-3 h-3" fill="currentColor" />
+                          ) : (
+                            i + 1
+                          )}
+                        </span>
+                        <span className="relative w-7 h-7 shrink-0 rounded overflow-hidden bg-base-200">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={t.artworkSrc}
+                            alt=""
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        </span>
+                        <span
+                          className={`min-w-0 flex-1 truncate text-sm ${isCurrent ? "font-semibold" : ""}`}
+                        >
+                          {t.title}
+                        </span>
+                        <span className="shrink-0 text-xs tabular-nums text-base-content/40">
+                          {formatDuration(t.duration)}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </div>
       )}
 
