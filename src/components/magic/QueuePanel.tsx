@@ -90,11 +90,12 @@ export function QueuePanel({
     return e.clientY - rect.top > rect.height / 2 ? i + 1 : i;
   }
 
-  const transportBtn = "rounded p-1 disabled:opacity-25 transition-opacity";
+  const transportBtn =
+    "rounded p-1 disabled:opacity-25 transition-opacity cursor-pointer disabled:cursor-not-allowed";
 
   return (
     <div
-      className="w-[min(92vw,440px)] overflow-hidden"
+      className="w-full overflow-hidden"
       style={{
         fontFamily: theme.fontFamily,
         background: theme.surface,
@@ -266,7 +267,7 @@ export function QueuePanel({
                   type="button"
                   onClick={() => onRemove(i)}
                   aria-label="Remove from queue"
-                  className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded transition-opacity hover:opacity-100"
+                  className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded transition-opacity hover:opacity-100"
                   style={{ color, opacity: 0.7 }}
                 >
                   <X className="h-3.5 w-3.5" />

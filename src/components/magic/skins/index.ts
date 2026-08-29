@@ -1,15 +1,9 @@
-import { ClassicSkin } from "@/components/magic/skins/ClassicSkin";
-import { CyberpunkSkin } from "@/components/magic/skins/CyberpunkSkin";
-import { IpodSkin } from "@/components/magic/skins/IpodSkin";
-import { TerminalSkin } from "@/components/magic/skins/TerminalSkin";
-import { VaporwaveSkin } from "@/components/magic/skins/VaporwaveSkin";
 import type { MagicSkin } from "@/components/magic/types";
 
-// The registry of available player skins. Order here is the order shown in
-// the switcher; the first entry is the default. Each skin is a self-contained
-// component implementing WinampSkinProps — adding one is just dropping a file
-// in this folder and appending an entry below. The `theme` palette lets the
-// shared chrome (queue panel + skin selector) match the skin's look.
+// The registry of available site themes ("skins"). Order here is the order
+// shown in the switcher; the first entry is the default. The `theme` palette
+// lets the shared queue panel match the site's active daisyUI theme (see
+// globals.css for the actual daisyUI theme definitions).
 export const SKINS: MagicSkin[] = [
   {
     id: "classic",
@@ -25,7 +19,6 @@ export const SKINS: MagicSkin[] = [
       accentText: "#05100a",
       radius: "3px",
     },
-    Component: ClassicSkin,
   },
   {
     id: "cyberpunk",
@@ -41,7 +34,6 @@ export const SKINS: MagicSkin[] = [
       accentText: "#04121a",
       radius: "2px",
     },
-    Component: CyberpunkSkin,
   },
   {
     id: "terminal",
@@ -57,7 +49,6 @@ export const SKINS: MagicSkin[] = [
       accentText: "#05100a",
       radius: "0px",
     },
-    Component: TerminalSkin,
   },
   {
     id: "vaporwave",
@@ -73,7 +64,6 @@ export const SKINS: MagicSkin[] = [
       accentText: "#2a0a3a",
       radius: "12px",
     },
-    Component: VaporwaveSkin,
   },
   {
     id: "ipod",
@@ -89,7 +79,6 @@ export const SKINS: MagicSkin[] = [
       accentText: "#ffffff",
       radius: "10px",
     },
-    Component: IpodSkin,
   },
 ];
 

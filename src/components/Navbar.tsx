@@ -1,16 +1,12 @@
 "use client";
 
-import { AudioLines, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { AuthStatus } from "@/components/AuthStatus";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { APP_TITLE } from "@/config";
 
 export function Navbar() {
-  // The full-page player is a full-bleed, chrome-free experience — no navbar.
-  const pathname = usePathname();
-  if (pathname === "/player") return null;
-
   return (
     <header className="navbar sticky top-0 z-50 bg-base-100/70 backdrop-blur-md border-b border-base-content/10">
       <div className="navbar-start">
@@ -27,15 +23,7 @@ export function Navbar() {
         >
           <Download className="w-5 h-5" />
         </Link>
-        <Link
-          href="/player"
-          aria-label="Open player"
-          title="Player"
-          className="btn btn-ghost gap-1 normal-case"
-        >
-          <AudioLines className="w-5 h-5" />
-          Player
-        </Link>
+        <ThemeSwitcher />
         <AuthStatus />
       </div>
     </header>
