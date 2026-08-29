@@ -35,6 +35,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#23232a" />
         {/* Applies the visitor's stored skin/theme before first paint, so
             reloading doesn't flash the default "classic" theme first. */}
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: static script sourced from our own THEME_INIT_SCRIPT constant, not user input */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body

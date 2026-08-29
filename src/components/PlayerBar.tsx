@@ -112,6 +112,7 @@ export function PlayerBar() {
             isPlayerExpanded ? "translate-y-24 opacity-0 pointer-events-none" : entered ? "translate-y-0 opacity-100" : "translate-y-24 opacity-0"
           }`}
         >
+        {/* biome-ignore lint/a11y/useSemanticElements: contains a nested play/pause <button>, so the outer control can't itself be a <button> */}
         <div
           role="button"
           tabIndex={0}
