@@ -32,7 +32,7 @@ interface PlayerContextValue {
   volume: number;
   // The ordered list of tracks playback advances through, and the position
   // of the current track within it (-1 when the current track isn't part of
-  // the queue). Populated by the /player view; empty elsewhere.
+  // the queue). Populated by the player bar; empty elsewhere.
   queue: PlayerTrack[];
   queueIndex: number;
   hasNext: boolean;

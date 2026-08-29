@@ -23,7 +23,7 @@ interface TrackPickerPanelProps {
 // skins without deriving an alpha from each theme's accent.
 const HOVER_BG = "rgba(128,128,128,0.18)";
 
-// A quick-start track list shown on the /player page when nothing is queued
+// A quick-start track list shown in the player bar when nothing is queued
 // yet: the whole library, click a row to start it. Rendered in the active
 // skin's palette to match the queue panel, and purely presentational — the
 // pick goes back out through onPlay.
