@@ -105,7 +105,7 @@ export function PlayerBar() {
             type="button"
             onClick={() => toggle(currentTrack)}
             aria-label={isPlaying ? "Pause" : "Play"}
-            className="btn btn-ghost btn-circle btn-sm shrink-0"
+            className="btn btn-ghost btn-circle btn-sm shrink-0 cursor-pointer"
           >
             {isPlaying ? (
               isBuffering ? (
@@ -129,7 +129,7 @@ export function PlayerBar() {
             onClick={() => setExpanded((v) => !v)}
             aria-label={expanded ? "Collapse player" : "Expand player"}
             aria-expanded={expanded}
-            className="btn btn-ghost btn-circle btn-sm shrink-0"
+            className="btn btn-ghost btn-circle btn-sm shrink-0 cursor-pointer"
           >
             {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
           </button>
@@ -143,7 +143,7 @@ export function PlayerBar() {
           value={progress}
           onChange={(e) => seek(Number(e.target.value))}
           aria-label="Seek"
-          className="range range-primary range-xs w-full block rounded-none"
+          className="range range-primary range-xs w-full block rounded-none cursor-pointer"
         />
 
         {expanded && (
@@ -158,7 +158,7 @@ export function PlayerBar() {
                 value={volume}
                 onChange={(e) => setVolume(Number(e.target.value))}
                 aria-label="Volume"
-                className="range range-xs flex-1"
+                className="range range-xs flex-1 cursor-pointer"
               />
             </div>
 
